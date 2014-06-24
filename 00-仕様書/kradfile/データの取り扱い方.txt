@@ -1,0 +1,2 @@
+* http://www.csse.monash.edu.au/~jwb/kradinf.htmlを参照
+* ファイルがEUC-JPでエンコードした。

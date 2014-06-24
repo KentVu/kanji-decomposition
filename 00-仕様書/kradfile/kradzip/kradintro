@@ -1,0 +1,38 @@
+#
+#                           K R A D F I L E
+#
+#	Copyright 2001/2007 Michael Raine, James Breen and the Electronic
+#       Dictionary Research & Development Group at Monash University.
+#	See: http://www.csse.monash.edu.au/~jwb/edrdg/licence.html
+#       for permissions for use and redistribution.
+# 
+# This is the data file from which the "radkfile" is made, which in turn
+# drives the multi-radical lookup method in XJDIC, WWWJDIC and possibly 
+# other dictionary and related software.
+# 
+# The file is based on work done in 1994/1995 by Michael Raine in which he
+# analyzed all the JIS1/2 kanji and identified the constituent radicals and 
+# other common elements, with the intention of facilitating the selection of
+# kanji within a dictionary program by identifying multiple elements.
+# The file was revised by Jim Breen in September 1995. Further revisions were
+# done in 1998/9 at the suggestion of Wolfgang Conrath, then a revision was
+# carried out in 2001 using suggestions from Yutaka Ohno based on a similar
+# decomposition made by Kobayashi. Further amendments were made in July
+# 2001 after suggestions from Hendrik.
+# 
+# The file consists of 6,355 lines of text; one for each of the 
+# JIS X 0208-1997 kanji. Each line is a follows:
+# - the kanji itself,
+# - a space followed by a colon (:) followed by a space,
+# - one or more radicals/elements which can be seen in the kanji. These
+#   are drawn from JIS X 0208-1997. Where the element alone is not in
+#   JIS X 0208, a kanji which contains the element is used instead.
+#
+# The decomposition is based on what can be seen in typical kanji
+# glyphs. Elements themselves can be further subdivided. For example,
+# Àå is an element and so is ¸ý, so the elements in ÏÃ are <¸ý Àå ¸À>.
+# 
+# Jim Breen, Tokyo, January 2001
+#            Melbourne, July 2001
+#            Melbourne, Dec  2004
+#
