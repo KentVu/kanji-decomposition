@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Kanji decomposition</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="search_prompt">Input Search:</string>
+    <string name="parts_label">Parts:</string>
+    <string name="input_hint">Enter kanji</string>
+    <string name="parts_hint">Parts of the kanji on the left will display here</string>
+    <string name="large_moji_default_text">漢</string>
+    <string name="search_button_desc">Search</string>
+    <string name="part_of_label">Part of:</string>
+    <string name="part_of_default_text">難、水、夫</string>
+
+</resources>
