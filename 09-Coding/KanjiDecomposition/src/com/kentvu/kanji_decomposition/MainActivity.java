@@ -1,5 +1,13 @@
 package com.kentvu.kanji_decomposition;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+
+import com.kentvu.kanji_decomposition.KanjiPartsDbHelper.KanjiPartsDbContract.KanjiParts;
+
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -15,6 +23,7 @@ import android.widget.TextView;
 
 public class MainActivity extends ActionBarActivity {
 
+	private static final int MAX_LINE_LENGTH = 150;
 	KanjiPartsDbHelper mDbHelper;
 
 	@Override
@@ -32,7 +41,6 @@ public class MainActivity extends ActionBarActivity {
 
 		mDbHelper = new KanjiPartsDbHelper(getBaseContext());
 		// Gets the data repository in write mode
-		SQLiteDatabase db = mDbHelper.getWritableDatabase();
 	}
 
 	public void SearchButton_onClick(View view) {
@@ -46,15 +54,41 @@ public class MainActivity extends ActionBarActivity {
 		includingKanjisDisplay();
 	}
 
+	private void largeMojiDisplay(String kanji) {
+		// display to the largeMojiDisp
+		TextView largeMojiDispCtrl = (TextView) findViewById(R.id.LargeMojiDisp);
+		// display only the first kanji in string
+		largeMojiDispCtrl.setText(kanji.substring(0, 1));
+	}
+
 	private void mojiPartsDisplay(String kanji) {
 		// get the display control
 		TextView partsDispCtrl = (TextView) findViewById(R.id.PartsDisp);
 		partsDispCtrl.setMovementMethod(new ScrollingMovementMethod());
 
-		// Get kanji unicode value
-		char[] kanjiArray = kanji.toCharArray();
-		int unival = kanjiArray[0];
-		// partsDispCtrl.setText(Integer.toHexString(unival));
+		// prepare data
+		// get kanji unicode value
+		int unival = kanji.toCharArray()[0];
+		// retrieve data from database
+		SQLiteDatabase db = mDbHelper.getReadableDatabase();
+		// Define a projection that specifies which columns from the database
+		// you will actually use after this query.
+		String[] projection = { KanjiParts.COLUMN_NAME_UNICODE_VALUE,
+				KanjiParts.COLUMN_NAME_RADICALS };
+		Cursor c = db.query(KanjiParts.TABLE_NAME, // The table to query
+				projection, // The columns to return
+				KanjiParts.COLUMN_NAME_UNICODE_VALUE, // The columns for the
+														// WHERE clause
+				new String[]{ Integer.toString(unival)}, // The values for the WHERE clause
+				null, // don't group the rows
+				null, // don't filter by row groups
+				null // The sort order
+				);
+		c.moveToFirst();
+		String parts = c.getString(1);
+		
+		// display to user
+		partsDispCtrl.setText(parts);
 	}
 
 	private void includingKanjisDisplay() {
@@ -62,13 +96,13 @@ public class MainActivity extends ActionBarActivity {
 		TextView partOfDispCtrl = (TextView) findViewById(R.id.PartOfDisp);
 		partOfDispCtrl.setMovementMethod(new ScrollingMovementMethod());
 
-	}
+		// prepare data
+		// BufferedReader br = new BufferedReader(new InputStreamReader(
+		// getResources().openRawResource(R.raw.kradfile),
+		// Charset.forName("EUC-JP")));
 
-	private void largeMojiDisplay(String kanji) {
-		// display to the largeMojiDisp
-		TextView largeMojiDispCtrl = (TextView) findViewById(R.id.LargeMojiDisp);
-		// display only the first kanji in string
-		largeMojiDispCtrl.setText(kanji.substring(0, 1));
+		// display on the control
+
 	}
 
 	@Override

@@ -28,16 +28,16 @@
             android:layout_weight="1"
             android:hint="@string/input_hint"
             android:inputType="text"
-            android:maxLines="1" 
-            /><!-- just to flagout the multiline attribute -->
+            android:maxLines="1" />
+        <!-- just to flagout the multiline attribute -->
 
         <ImageButton
             android:id="@+id/SearchButton"
             android:layout_width="@dimen/search_btn_width"
             android:layout_height="match_parent"
             android:contentDescription="@string/search_button_desc"
-            android:src="@drawable/abc_ic_search" 
-            android:onClick="SearchButton_onClick"/>
+            android:onClick="SearchButton_onClick"
+            android:src="@drawable/abc_ic_search" />
     </LinearLayout>
 
     <LinearLayout
