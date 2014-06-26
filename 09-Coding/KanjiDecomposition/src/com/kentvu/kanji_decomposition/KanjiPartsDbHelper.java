@@ -5,18 +5,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 
-import com.kentvu.kanji_decomposition.KanjiPartsDbHelper.KanjiPartsDbContract.KanjiParts;
-
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.res.Resources;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
-import android.provider.OpenableColumns;
-import android.text.InputFilter.LengthFilter;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.kentvu.kanji_decomposition.KanjiPartsDbHelper.KanjiPartsDbContract.KanjiParts;
 
 public class KanjiPartsDbHelper extends SQLiteOpenHelper {
 	public final class KanjiPartsDbContract {
@@ -32,6 +29,8 @@ public class KanjiPartsDbHelper extends SQLiteOpenHelper {
 			public static final String TABLE_NAME = "kanjiparts";
 			public static final String COLUMN_NAME_UNICODE_VALUE = "unicode_value";
 			public static final String COLUMN_NAME_RADICALS = "radicals";
+			public static final String COLUMN_NAME_PARTOF = "part_of";
+			public static final String COLUMN_NAME_JIS212_CODE = "jis212_code";
 		}
 
 		private static final String TEXT_TYPE = " TEXT";
@@ -39,9 +38,11 @@ public class KanjiPartsDbHelper extends SQLiteOpenHelper {
 		public static final String SQL_CREATE_KANJIPARTS = "CREATE TABLE "
 				+ KanjiParts.TABLE_NAME + " ("
 				+ KanjiParts.COLUMN_NAME_UNICODE_VALUE + " INTEGER PRIMARY KEY"
-				+ COMMA_SEP + KanjiParts.COLUMN_NAME_RADICALS + TEXT_TYPE +
+				+ COMMA_SEP + KanjiParts.COLUMN_NAME_RADICALS + TEXT_TYPE
+				+ COMMA_SEP + KanjiParts.COLUMN_NAME_PARTOF + TEXT_TYPE
+				+ COMMA_SEP + KanjiParts.COLUMN_NAME_JIS212_CODE + TEXT_TYPE
 				// ... Any other options for the CREATE command
-				" )";
+				+ " )";
 
 		// public static final String SQL_
 
@@ -52,7 +53,7 @@ public class KanjiPartsDbHelper extends SQLiteOpenHelper {
 
 	// If you change the database schema, you must increment the database
 	// version.
-	public static final int DATABASE_VERSION = 1;
+	public static final int DATABASE_VERSION = 3;
 	public static final String DATABASE_NAME = "KanjiParts.db";
 
 	private Context context;
@@ -95,16 +96,84 @@ public class KanjiPartsDbHelper extends SQLiteOpenHelper {
 					// the new row
 					long newRowId;
 					newRowId = db.insert(KanjiParts.TABLE_NAME, null, values);
-					Log.w(context.getString(R.string.app_name),
-							"Inserted new row : " + newRowId);
+					 Log.w(context.getString(R.string.app_name),
+					 "Inserted new row : " + newRowId);
 				}
 				line = br.readLine();
 			}
+			br.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
+		try {
+			br = new BufferedReader(new InputStreamReader(context
+					.getResources().openRawResource(R.raw.radkfile),
+					Charset.forName("EUC-JP")));
+			String line = br.readLine().trim();
+			char currentKanji = '\u0000';
+			@SuppressWarnings("unused")
+			int kanjiStroke;
+			String includingKanji = "";
+			String jis212code = "";
+			// for each line
+			while (line != null) {
+				// check if it's started with a "$"
+				if (line.startsWith("$")) {
+					// last time stored includingKanji information available?
+					if (!"".equals(includingKanji) && currentKanji != '\u0000') {
+						// update database's table
+						ContentValues values = new ContentValues();
+						int unival = currentKanji;
+						// values.put(KanjiParts.COLUMN_NAME_UNICODE_VALUE,
+						// unival);
+						values.put(KanjiParts.COLUMN_NAME_PARTOF,
+								includingKanji);
+						values.put(KanjiParts.COLUMN_NAME_JIS212_CODE,
+								jis212code);
+						// Which row to update, based on the ID
+						String selection = KanjiParts.COLUMN_NAME_UNICODE_VALUE
+								+ " = ?";
+						String[] selectionArgs = { String.valueOf(unival) };
+						// update
+						int count = db.update(KanjiParts.TABLE_NAME, values,
+								selection, selectionArgs);
+						Log.i(context.getString(R.string.app_name),
+								"Updated part_of info : unival " + unival
+										+ ", " + count + " row affected");
+						if (count == 0) {
+							// if kanji is not available, insert
+							values.put(KanjiParts.COLUMN_NAME_UNICODE_VALUE,
+									unival);
+							long newRowId = db.insert(KanjiParts.TABLE_NAME,
+									null, values);
+							Log.w(context.getString(R.string.app_name),
+									"Kanji is not available, inserted new row : " + newRowId);
+						}
+						// clear values
+						includingKanji = "";
+					}
+					String tokens[] = line.split(" ");
+					currentKanji = tokens[1].charAt(0);
+					kanjiStroke = Integer.parseInt(tokens[2]);
+					if (tokens.length >= 4) {
+						jis212code = tokens[3];
+					}
+				} else {
+					// check if it's not started with a "#"
+					if (!line.startsWith("#")) {
+						// append the including Kanji list
+						includingKanji += line;	// remember to clear it when done appending!
+					}
+				}
+				line = br.readLine();
+			}
+			br.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		Toast.makeText(context, "Database Created", Toast.LENGTH_LONG).show();
 	}
 

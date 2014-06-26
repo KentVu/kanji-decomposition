@@ -1,29 +1,29 @@
 package com.kentvu.kanji_decomposition;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
-
-import com.kentvu.kanji_decomposition.KanjiPartsDbHelper.KanjiPartsDbContract.KanjiParts;
-
+import android.app.Activity;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBarActivity;
 import android.text.method.ScrollingMovementMethod;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.TextView.OnEditorActionListener;
 
-public class MainActivity extends ActionBarActivity {
+import com.kentvu.kanji_decomposition.KanjiPartsDbHelper.KanjiPartsDbContract.KanjiParts;
 
-	private static final int MAX_LINE_LENGTH = 150;
+public class MainActivity extends ActionBarActivity implements
+		OnEditTextActionListener {
+
+	// private static final int MAX_LINE_LENGTH = 150;
 	KanjiPartsDbHelper mDbHelper;
 
 	@Override
@@ -38,9 +38,8 @@ public class MainActivity extends ActionBarActivity {
 
 		// check if the database have been already created
 		// SQLiteOpenHelperを用いる為、必要ないとする
-
 		mDbHelper = new KanjiPartsDbHelper(getBaseContext());
-		// Gets the data repository in write mode
+
 	}
 
 	public void SearchButton_onClick(View view) {
@@ -51,7 +50,7 @@ public class MainActivity extends ActionBarActivity {
 
 		largeMojiDisplay(searchKanji);
 		mojiPartsDisplay(searchKanji);
-		includingKanjisDisplay();
+		includingKanjisDisplay(searchKanji);
 	}
 
 	private void largeMojiDisplay(String kanji) {
@@ -59,6 +58,10 @@ public class MainActivity extends ActionBarActivity {
 		TextView largeMojiDispCtrl = (TextView) findViewById(R.id.LargeMojiDisp);
 		// display only the first kanji in string
 		largeMojiDispCtrl.setText(kanji.substring(0, 1));
+
+		// for debug purpose:
+		TextView debugDisp = (TextView) findViewById(R.id.DebugDisp);
+		debugDisp.setText(Integer.toString(kanji.charAt(0)));
 	}
 
 	private void mojiPartsDisplay(String kanji) {
@@ -68,46 +71,71 @@ public class MainActivity extends ActionBarActivity {
 
 		// prepare data
 		// get kanji unicode value
-		int unival = kanji.toCharArray()[0];
+		int unival = kanji.charAt(0);
 		// retrieve data from database
 		SQLiteDatabase db = mDbHelper.getReadableDatabase();
 		// Define a projection that specifies which columns from the database
 		// you will actually use after this query.
 		String[] projection = { KanjiParts.COLUMN_NAME_UNICODE_VALUE,
 				KanjiParts.COLUMN_NAME_RADICALS };
+		// long execution time when creating database (calling on create of
+		// mDbHelper) (use some kind of parallelizing to overcome/deal with
+		// this?)
 		Cursor c = db.query(KanjiParts.TABLE_NAME, // The table to query
 				projection, // The columns to return
-				KanjiParts.COLUMN_NAME_UNICODE_VALUE, // The columns for the
-														// WHERE clause
-				new String[]{ Integer.toString(unival)}, // The values for the WHERE clause
+				KanjiParts.COLUMN_NAME_UNICODE_VALUE + " = ?", // The
+																// columns
+																// for
+																// the WHERE
+																// clause
+				new String[] { Integer.toString(unival) }, // The values for the
+															// WHERE clause
 				null, // don't group the rows
 				null, // don't filter by row groups
 				null // The sort order
 				);
 		c.moveToFirst();
 		String parts = c.getString(1);
-		
+
 		// display to user
 		partsDispCtrl.setText(parts);
+		c.close();
 	}
 
-	private void includingKanjisDisplay() {
+	private void includingKanjisDisplay(String kanji) {
 		// get the display control
 		TextView partOfDispCtrl = (TextView) findViewById(R.id.PartOfDisp);
 		partOfDispCtrl.setMovementMethod(new ScrollingMovementMethod());
+		// clear hint text
+		partOfDispCtrl.setHint("");
 
 		// prepare data
-		// BufferedReader br = new BufferedReader(new InputStreamReader(
-		// getResources().openRawResource(R.raw.kradfile),
-		// Charset.forName("EUC-JP")));
+		int unival = kanji.charAt(0);
+		SQLiteDatabase db = mDbHelper.getReadableDatabase();
+		String[] projection = { KanjiParts.COLUMN_NAME_UNICODE_VALUE,
+				KanjiParts.COLUMN_NAME_PARTOF };
+		Cursor c = db.query(KanjiParts.TABLE_NAME, // The table to query
+				projection, // The columns to return
+				KanjiParts.COLUMN_NAME_UNICODE_VALUE + " = ?", // The
+																// columns
+																// for
+																// the WHERE
+																// clause
+				new String[] { Integer.toString(unival) }, // The values for the
+															// WHERE clause
+				null, // don't group the rows
+				null, // don't filter by row groups
+				null // The sort order
+				);
+		c.moveToFirst();
+		String includingKanji = c.getString(1);
 
 		// display on the control
-
+		partOfDispCtrl.setText(includingKanji);
 	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
@@ -125,10 +153,17 @@ public class MainActivity extends ActionBarActivity {
 		return super.onOptionsItemSelected(item);
 	}
 
+	@Override
+	public void onEditTextEnter(int actionId, View view) {
+		// TODO Auto-generated method stub
+		SearchButton_onClick(view);
+	}
+
 	/**
 	 * A placeholder fragment containing a simple view.
 	 */
 	public static class PlaceholderFragment extends Fragment {
+		OnEditTextActionListener mCallback;
 
 		public PlaceholderFragment() {
 		}
@@ -138,8 +173,42 @@ public class MainActivity extends ActionBarActivity {
 				Bundle savedInstanceState) {
 			View rootView = inflater.inflate(R.layout.fragment_main, container,
 					false);
+			// get the edittext control containing the searching kanji
+			EditText searchKanjiCtrl = (EditText) rootView
+					.findViewById(R.id.InputText);
+			searchKanjiCtrl.setSingleLine();
+			searchKanjiCtrl
+					.setOnEditorActionListener(new OnEditorActionListener() {
+
+						@Override
+						public boolean onEditorAction(TextView v, int actionId,
+								KeyEvent event) {
+							// TODO Auto-generated method stub
+							boolean handled = false;
+							if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+								mCallback.onEditTextEnter(actionId, v);
+								handled = true;
+							}
+							return handled;
+						}
+					});
 			return rootView;
 		}
-	}
 
+		@Override
+		public void onAttach(Activity activity) {
+			// TODO Auto-generated method stub
+			super.onAttach(activity);
+
+			// This makes sure that the container activity has implemented
+			// the callback interface. If not, it throws an exception
+			try {
+				mCallback = (OnEditTextActionListener) activity;
+			} catch (ClassCastException e) {
+				throw new ClassCastException(activity.toString()
+						+ " must implement OnEditTextActionListener");
+			}
+		}
+
+	}
 }
