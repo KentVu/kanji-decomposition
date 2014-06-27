@@ -21,7 +21,7 @@ import android.widget.TextView.OnEditorActionListener;
 import com.kentvu.kanji_decomposition.KanjiPartsDbHelper.KanjiPartsDbContract.KanjiParts;
 
 public class MainActivity extends ActionBarActivity implements
-		OnEditTextActionListener {
+		PlaceHolderFragmentMessages {
 
 	// private static final int MAX_LINE_LENGTH = 150;
 	KanjiPartsDbHelper mDbHelper;
@@ -40,6 +40,30 @@ public class MainActivity extends ActionBarActivity implements
 		// SQLiteOpenHelperを用いる為、必要ないとする
 		mDbHelper = new KanjiPartsDbHelper(getBaseContext());
 
+	}
+
+	/**
+	 * Handle PlaceholderFragment's messages
+	 */
+	@Override
+	public void onFragmentViewCreated(View view) {
+		// get the edittext control containing the searching kanji
+		EditText searchKanjiCtrl = (EditText) view.findViewById(R.id.InputText);
+		// searchKanjiCtrl.setSingleLine();
+		searchKanjiCtrl.setOnEditorActionListener(new OnEditorActionListener() {
+
+			@Override
+			public boolean onEditorAction(TextView v, int actionId,
+					KeyEvent event) {
+				// TODO Auto-generated method stub
+				boolean handled = false;
+				if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+					SearchButton_onClick(v);
+					handled = true;
+				}
+				return handled;
+			}
+		});
 	}
 
 	public void SearchButton_onClick(View view) {
@@ -153,17 +177,11 @@ public class MainActivity extends ActionBarActivity implements
 		return super.onOptionsItemSelected(item);
 	}
 
-	@Override
-	public void onEditTextEnter(int actionId, View view) {
-		// TODO Auto-generated method stub
-		SearchButton_onClick(view);
-	}
-
 	/**
 	 * A placeholder fragment containing a simple view.
 	 */
 	public static class PlaceholderFragment extends Fragment {
-		OnEditTextActionListener mCallback;
+		PlaceHolderFragmentMessages mCallbacks;
 
 		public PlaceholderFragment() {
 		}
@@ -173,25 +191,9 @@ public class MainActivity extends ActionBarActivity implements
 				Bundle savedInstanceState) {
 			View rootView = inflater.inflate(R.layout.fragment_main, container,
 					false);
-			// get the edittext control containing the searching kanji
-			EditText searchKanjiCtrl = (EditText) rootView
-					.findViewById(R.id.InputText);
-			searchKanjiCtrl.setSingleLine();
-			searchKanjiCtrl
-					.setOnEditorActionListener(new OnEditorActionListener() {
+			// notify MainActivity
+			mCallbacks.onFragmentViewCreated(rootView);
 
-						@Override
-						public boolean onEditorAction(TextView v, int actionId,
-								KeyEvent event) {
-							// TODO Auto-generated method stub
-							boolean handled = false;
-							if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-								mCallback.onEditTextEnter(actionId, v);
-								handled = true;
-							}
-							return handled;
-						}
-					});
 			return rootView;
 		}
 
@@ -203,7 +205,7 @@ public class MainActivity extends ActionBarActivity implements
 			// This makes sure that the container activity has implemented
 			// the callback interface. If not, it throws an exception
 			try {
-				mCallback = (OnEditTextActionListener) activity;
+				mCallbacks = (PlaceHolderFragmentMessages) activity;
 			} catch (ClassCastException e) {
 				throw new ClassCastException(activity.toString()
 						+ " must implement OnEditTextActionListener");
