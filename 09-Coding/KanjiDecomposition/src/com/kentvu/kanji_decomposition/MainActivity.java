@@ -1,12 +1,15 @@
 package com.kentvu.kanji_decomposition;
 
 import android.app.Activity;
+import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBarActivity;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -14,8 +17,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.webkit.WebView.FindListener;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.TextView.OnEditorActionListener;
 
 import com.kentvu.kanji_decomposition.KanjiPartsDbHelper.KanjiPartsDbContract.KanjiParts;
@@ -32,14 +38,37 @@ public class MainActivity extends ActionBarActivity implements
 		setContentView(R.layout.activity_main);
 
 		if (savedInstanceState == null) {
+			PlaceholderFragment placeholderFragment = new PlaceholderFragment();
 			getSupportFragmentManager().beginTransaction()
-					.add(R.id.container, new PlaceholderFragment()).commit();
+					.add(R.id.container, placeholderFragment).commit();
 		}
 
-		// check if the database have been already created
-		// SQLiteOpenHelperを用いる為、必要ないとする
 		mDbHelper = new KanjiPartsDbHelper(getBaseContext());
+		// notify the user of creating database may take time
+		// TODO: wrap these inside kinda parallelizing code?
+		try {
+			SQLiteDatabase dbe = SQLiteDatabase
+					.openDatabase(
+							getDatabasePath(KanjiPartsDbHelper.DATABASE_NAME)
+									.getPath(), null, 0);
+			Log.i("sqlite", getDatabasePath(KanjiPartsDbHelper.DATABASE_NAME)
+					.getPath() + " exists");
+			dbe.close();
+		} catch (SQLiteException e) {
+			// If not created, notify the user (via Toast)
+			Log.w("sqlite", getDatabasePath(KanjiPartsDbHelper.DATABASE_NAME)
+					.getPath() + " NOT exists");
+			Toast.makeText(
+					this,
+					"Creating database may take time on first search, please be patient!",
+					Toast.LENGTH_LONG).show();
+		}
+	}
 
+	@Override
+	protected void onDestroy() {
+		// TODO Auto-generated method stub
+		super.onDestroy();
 	}
 
 	/**
@@ -47,28 +76,12 @@ public class MainActivity extends ActionBarActivity implements
 	 */
 	@Override
 	public void onFragmentViewCreated(View view) {
-		// get the edittext control containing the searching kanji
-		EditText searchKanjiCtrl = (EditText) view.findViewById(R.id.InputText);
-		// searchKanjiCtrl.setSingleLine();
-		searchKanjiCtrl.setOnEditorActionListener(new OnEditorActionListener() {
-
-			@Override
-			public boolean onEditorAction(TextView v, int actionId,
-					KeyEvent event) {
-				// TODO Auto-generated method stub
-				boolean handled = false;
-				if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-					SearchButton_onClick(v);
-					handled = true;
-				}
-				return handled;
-			}
-		});
+		// placeholder
 	}
 
 	public void SearchButton_onClick(View view) {
 		// get the edittext control containing the searching kanji
-		EditText searchKanjiCtrl = (EditText) findViewById(R.id.InputText);
+		EditText searchKanjiCtrl = (EditText) findViewById(R.id.KanjiInput);
 		// get the searching kanji as string
 		String searchKanji = searchKanjiCtrl.getText().toString();
 
@@ -124,6 +137,7 @@ public class MainActivity extends ActionBarActivity implements
 		// display to user
 		partsDispCtrl.setText(parts);
 		c.close();
+		db.close();
 	}
 
 	private void includingKanjisDisplay(String kanji) {
@@ -156,6 +170,7 @@ public class MainActivity extends ActionBarActivity implements
 
 		// display on the control
 		partOfDispCtrl.setText(includingKanji);
+		db.close();
 	}
 
 	@Override
@@ -182,6 +197,7 @@ public class MainActivity extends ActionBarActivity implements
 	 */
 	public static class PlaceholderFragment extends Fragment {
 		PlaceHolderFragmentMessages mCallbacks;
+		private MainActivity mainActivity;
 
 		public PlaceholderFragment() {
 		}
@@ -191,6 +207,28 @@ public class MainActivity extends ActionBarActivity implements
 				Bundle savedInstanceState) {
 			View rootView = inflater.inflate(R.layout.fragment_main, container,
 					false);
+			mainActivity = (MainActivity) getActivity();
+
+			// get the edittext control containing the searching kanji
+			EditText searchKanjiCtrl = (EditText) rootView
+					.findViewById(R.id.KanjiInput);
+			searchKanjiCtrl
+					.setOnEditorActionListener(new OnEditorActionListener() {
+						@Override
+						public boolean onEditorAction(TextView v, int actionId,
+								KeyEvent event) {
+							boolean handled = false;
+							if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+								mainActivity.SearchButton_onClick(v);
+								InputMethodManager imm = (InputMethodManager) mainActivity
+										.getSystemService(Context.INPUT_METHOD_SERVICE);
+								imm.hideSoftInputFromWindow(v.getWindowToken(),
+										InputMethodManager.HIDE_IMPLICIT_ONLY);
+								handled = true;
+							}
+							return handled;
+						}
+					});
 			// notify MainActivity
 			mCallbacks.onFragmentViewCreated(rootView);
 
@@ -208,7 +246,7 @@ public class MainActivity extends ActionBarActivity implements
 				mCallbacks = (PlaceHolderFragmentMessages) activity;
 			} catch (ClassCastException e) {
 				throw new ClassCastException(activity.toString()
-						+ " must implement OnEditTextActionListener");
+						+ " must implement PlaceHolderFragmentMessages");
 			}
 		}
 

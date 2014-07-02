@@ -22,7 +22,7 @@
         android:orientation="horizontal" >
 
         <EditText
-            android:id="@+id/InputText"
+            android:id="@+id/KanjiInput"
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -33,6 +33,7 @@
             android:text="@string/default_input_text" />
         <!-- just to flagout the multiline attribute -->
         <!-- android:text="@string/default_input_text" -->
+        
 
         <ImageButton
             android:id="@+id/SearchButton"

@@ -70,7 +70,6 @@ public class KanjiPartsDbHelper extends SQLiteOpenHelper {
 	}
 
 	private void initDictTable(SQLiteDatabase db) {
-		Toast.makeText(context, "Creating database", Toast.LENGTH_LONG).show();
 		// Read in each line of kradfile
 		// open kradfile?
 		BufferedReader br = new BufferedReader(new InputStreamReader(context
