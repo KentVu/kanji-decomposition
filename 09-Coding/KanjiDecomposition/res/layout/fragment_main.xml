@@ -33,7 +33,6 @@
             android:text="@string/default_input_text" />
         <!-- just to flagout the multiline attribute -->
         <!-- android:text="@string/default_input_text" -->
-        
 
         <ImageButton
             android:id="@+id/SearchButton"
@@ -69,6 +68,7 @@
                 android:id="@+id/LargeMojiDisp"
                 android:layout_width="@dimen/large_moji_width"
                 android:layout_height="@dimen/large_moji_height"
+                android:focusable="true"
                 android:maxLines="1"
                 android:text="@string/large_moji_default_text"
                 android:textSize="50sp" />
@@ -90,6 +90,7 @@
 
             <TextView
                 android:id="@+id/PartsDisp"
+                android:focusable="true"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_alignParentBottom="true"
@@ -119,6 +120,7 @@
 
         <TextView
             android:id="@+id/PartOfDisp"
+            android:focusable="true"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@id/PartOfLabel"

@@ -18,11 +18,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.WebView.FindListener;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.TextView.OnEditorActionListener;
+import android.widget.Toast;
 
 import com.kentvu.kanji_decomposition.KanjiPartsDbHelper.KanjiPartsDbContract.KanjiParts;
 
@@ -223,7 +222,7 @@ public class MainActivity extends ActionBarActivity implements
 								InputMethodManager imm = (InputMethodManager) mainActivity
 										.getSystemService(Context.INPUT_METHOD_SERVICE);
 								imm.hideSoftInputFromWindow(v.getWindowToken(),
-										InputMethodManager.HIDE_IMPLICIT_ONLY);
+										InputMethodManager.HIDE_NOT_ALWAYS);
 								handled = true;
 							}
 							return handled;
@@ -237,8 +236,7 @@ public class MainActivity extends ActionBarActivity implements
 
 		@Override
 		public void onAttach(Activity activity) {
-			// TODO Auto-generated method stub
-			super.onAttach(activity);
+				super.onAttach(activity);
 
 			// This makes sure that the container activity has implemented
 			// the callback interface. If not, it throws an exception

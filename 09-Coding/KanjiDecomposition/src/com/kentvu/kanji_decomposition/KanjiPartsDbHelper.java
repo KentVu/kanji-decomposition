@@ -55,6 +55,7 @@ public class KanjiPartsDbHelper extends SQLiteOpenHelper {
 	// version.
 	public static final int DATABASE_VERSION = 3;
 	public static final String DATABASE_NAME = "KanjiParts.db";
+//	public boolean DatabaseCreated = false;
 
 	private Context context;
 
@@ -67,6 +68,7 @@ public class KanjiPartsDbHelper extends SQLiteOpenHelper {
 	public void onCreate(SQLiteDatabase db) {
 		db.execSQL(KanjiPartsDbContract.SQL_CREATE_KANJIPARTS);
 		initDictTable(db);
+//		DatabaseCreated = true;
 	}
 
 	private void initDictTable(SQLiteDatabase db) {
