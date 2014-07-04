@@ -30,6 +30,7 @@ public class MainActivity extends ActionBarActivity implements
 
 	// private static final int MAX_LINE_LENGTH = 150;
 	KanjiPartsDbHelper mDbHelper;
+	SQLiteDatabase db;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -84,9 +85,12 @@ public class MainActivity extends ActionBarActivity implements
 		// get the searching kanji as string
 		String searchKanji = searchKanjiCtrl.getText().toString();
 
+		db = mDbHelper.getReadableDatabase();
 		largeMojiDisplay(searchKanji);
+		// mDbHelper.getReadableDatabase().beginTransaction();
 		mojiPartsDisplay(searchKanji);
 		includingKanjisDisplay(searchKanji);
+		db.close();
 	}
 
 	private void largeMojiDisplay(String kanji) {
@@ -108,8 +112,7 @@ public class MainActivity extends ActionBarActivity implements
 		// prepare data
 		// get kanji unicode value
 		int unival = kanji.charAt(0);
-		// retrieve data from database
-		SQLiteDatabase db = mDbHelper.getReadableDatabase();
+		// *Retrieve data from database
 		// Define a projection that specifies which columns from the database
 		// you will actually use after this query.
 		String[] projection = { KanjiParts.COLUMN_NAME_UNICODE_VALUE,
@@ -130,13 +133,22 @@ public class MainActivity extends ActionBarActivity implements
 				null, // don't filter by row groups
 				null // The sort order
 				);
-		c.moveToFirst();
-		String parts = c.getString(1);
+		String parts = null;
 
-		// display to user
-		partsDispCtrl.setText(parts);
+		// *display to user
+		if (c.moveToFirst()) {
+			parts = c.getString(1);
+			partsDispCtrl.setText(parts);
+		} else {
+			// searching kanji is not exists in database
+			partsDispCtrl.setHint(getResources().getString(
+					R.string.character_not_found));
+		}
+
+		// if (parts != null) {
+		// } else {
+		// }
 		c.close();
-		db.close();
 	}
 
 	private void includingKanjisDisplay(String kanji) {
@@ -148,7 +160,6 @@ public class MainActivity extends ActionBarActivity implements
 
 		// prepare data
 		int unival = kanji.charAt(0);
-		SQLiteDatabase db = mDbHelper.getReadableDatabase();
 		String[] projection = { KanjiParts.COLUMN_NAME_UNICODE_VALUE,
 				KanjiParts.COLUMN_NAME_PARTOF };
 		Cursor c = db.query(KanjiParts.TABLE_NAME, // The table to query
@@ -164,12 +175,15 @@ public class MainActivity extends ActionBarActivity implements
 				null, // don't filter by row groups
 				null // The sort order
 				);
-		c.moveToFirst();
-		String includingKanji = c.getString(1);
-
-		// display on the control
-		partOfDispCtrl.setText(includingKanji);
-		db.close();
+		if (c.moveToFirst()) {
+			String includingKanji = c.getString(1);
+			// display on the control
+			partOfDispCtrl.setText(includingKanji);
+		} else {
+			// searching kanji is not exists in database
+			// donothing!
+		}
+		c.close();
 	}
 
 	@Override
@@ -236,7 +250,7 @@ public class MainActivity extends ActionBarActivity implements
 
 		@Override
 		public void onAttach(Activity activity) {
-				super.onAttach(activity);
+			super.onAttach(activity);
 
 			// This makes sure that the container activity has implemented
 			// the callback interface. If not, it throws an exception
