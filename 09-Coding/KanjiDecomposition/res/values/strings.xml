@@ -12,5 +12,6 @@
     <string name="part_of_label">Part of:</string>
     <string name="part_of_default_text">難、水、夫</string>
     <string name="default_input_text">分</string>
+    <string name="character_not_found">Character not found</string>
 
 </resources>
