@@ -8,7 +8,11 @@ import android.database.sqlite.SQLiteException;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBarActivity;
-import android.text.method.ScrollingMovementMethod;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -79,6 +83,34 @@ public class MainActivity extends ActionBarActivity implements
 		// placeholder
 	}
 
+	class MyClickableSpan extends ClickableSpan {
+
+		String content = null;
+
+		public MyClickableSpan(String _content) {
+			// TODO Auto-generated constructor stub
+			super();
+			content = _content;
+		}
+
+		@Override
+		public void onClick(View widget) {
+			// TODO Copy to clipboard
+			// Toast.makeText(MainActivity.this, content, Toast.LENGTH_SHORT)
+			// .show();
+			EditText kanjiInput = (EditText) findViewById(R.id.KanjiInput);
+			kanjiInput.setText(content);
+		}
+
+		@Override
+		public void updateDrawState(TextPaint ds) {
+			// TODO Auto-generated method stub
+//			super.updateDrawState(ds);
+			// ds.setColor(Color.BLACK);//set text color
+			// ds.setUnderlineText(false); // set to false to remove underline
+		}
+	}
+
 	public void SearchButton_onClick(View view) {
 		// get the edittext control containing the searching kanji
 		EditText searchKanjiCtrl = (EditText) findViewById(R.id.KanjiInput);
@@ -88,7 +120,7 @@ public class MainActivity extends ActionBarActivity implements
 		db = mDbHelper.getReadableDatabase();
 		largeMojiDisplay(searchKanji);
 		// mDbHelper.getReadableDatabase().beginTransaction();
-		mojiPartsDisplay(searchKanji);
+		KanjiComponentsDisplay(searchKanji);
 		includingKanjisDisplay(searchKanji);
 		db.close();
 	}
@@ -104,10 +136,9 @@ public class MainActivity extends ActionBarActivity implements
 		debugDisp.setText(Integer.toString(kanji.charAt(0)));
 	}
 
-	private void mojiPartsDisplay(String kanji) {
+	private void KanjiComponentsDisplay(String kanji) {
 		// get the display control
 		TextView partsDispCtrl = (TextView) findViewById(R.id.PartsDisp);
-		partsDispCtrl.setMovementMethod(new ScrollingMovementMethod());
 
 		// prepare data
 		// get kanji unicode value
@@ -138,7 +169,8 @@ public class MainActivity extends ActionBarActivity implements
 		// *display to user
 		if (c.moveToFirst()) {
 			parts = c.getString(1);
-			partsDispCtrl.setText(parts);
+			SpannableString ss = makeClickableSpanString(partsDispCtrl, ' ', parts);
+			partsDispCtrl.setText(ss);
 		} else {
 			// searching kanji is not exists in database
 			partsDispCtrl.setHint(getResources().getString(
@@ -154,7 +186,6 @@ public class MainActivity extends ActionBarActivity implements
 	private void includingKanjisDisplay(String kanji) {
 		// get the display control
 		TextView partOfDispCtrl = (TextView) findViewById(R.id.PartOfDisp);
-		partOfDispCtrl.setMovementMethod(new ScrollingMovementMethod());
 		// clear hint text
 		partOfDispCtrl.setHint("");
 
@@ -162,28 +193,84 @@ public class MainActivity extends ActionBarActivity implements
 		int unival = kanji.charAt(0);
 		String[] projection = { KanjiParts.COLUMN_NAME_UNICODE_VALUE,
 				KanjiParts.COLUMN_NAME_PARTOF };
-		Cursor c = db.query(KanjiParts.TABLE_NAME, // The table to query
+		Cursor sqlCur = db.query(
+				KanjiParts.TABLE_NAME, // The table to query
 				projection, // The columns to return
-				KanjiParts.COLUMN_NAME_UNICODE_VALUE + " = ?", // The
-																// columns
-																// for
-																// the WHERE
-																// clause
+				// The columns for the WHERE clause
+				KanjiParts.COLUMN_NAME_UNICODE_VALUE + " = ?",
 				new String[] { Integer.toString(unival) }, // The values for the
 															// WHERE clause
 				null, // don't group the rows
 				null, // don't filter by row groups
 				null // The sort order
 				);
-		if (c.moveToFirst()) {
-			String includingKanji = c.getString(1);
+		if (sqlCur.moveToFirst()) {
+			String includingKanjis = sqlCur.getString(1);
 			// display on the control
-			partOfDispCtrl.setText(includingKanji);
+			if (includingKanjis != null) {
+				// if totalCharstoFit is odd
+				// build a string which adds a space after each character
+				StringBuilder sb = new StringBuilder();
+				for (char c : includingKanjis.toCharArray()) {
+					sb.append(c);
+					sb.append('Å@'); // "Japanese" space
+				}
+
+				SpannableString ss = makeClickableSpanString(partOfDispCtrl,
+						'Å@', sb.toString());
+				// since PartOfDisp has been set to LinkMovementMethod, this is
+				// okay!
+				partOfDispCtrl.append(ss);
+				// partOfDispCtrl.append("Å@");
+				// partOfDispCtrl.setText(sb);
+			} else {
+				// this kanji do not have any other kanji including it
+				partOfDispCtrl.setText("");
+			}
 		} else {
 			// searching kanji is not exists in database
-			// donothing!
+			partOfDispCtrl.setText("");
 		}
-		c.close();
+		sqlCur.close();
+	}
+
+	/**
+	 * Make each visible character to be spannable (ignoring spaces)
+	 * 
+	 * @param displayView
+	 *            TextView to be displayed in (for measuring purpose)
+	 * @param separatorSpace
+	 *            space type to be considered (Japanese space or ordinary space
+	 *            (0xa)
+	 * @param displayString
+	 *            String to make spannable
+	 * @return Spannable string
+	 */
+	private SpannableString makeClickableSpanString(TextView displayView,
+			char separatorSpace, String displayString) {
+		// get maximum number of character that can be fit into a line
+		int totalCharstoFit = displayView.getPaint().breakText(displayString, 0,
+				displayString.length(), true, displayView.getWidth(), null);
+		// beware of totalCharstoFit, if a line started by a space then
+		// delete that space
+		int charCount = 0;
+		StringBuilder sb = new StringBuilder(displayString);
+		while (charCount < sb.length()) {
+			if (sb.charAt(charCount) == separatorSpace) {
+				sb.deleteCharAt(charCount);
+			}
+			charCount += totalCharstoFit;
+		}
+		// if this kanji has part_of information
+		// make every displayed kanji clickable:
+		SpannableString ss = new SpannableString(sb);
+		for (int i = 0; i < sb.length(); i++) {
+			if (sb.charAt(i) != separatorSpace) {
+				ss.setSpan(new MyClickableSpan(sb.substring(i, i + 1)), i,
+						i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+			}
+		}
+		return ss;
 	}
 
 	@Override
@@ -212,6 +299,23 @@ public class MainActivity extends ActionBarActivity implements
 		PlaceHolderFragmentMessages mCallbacks;
 		private MainActivity mainActivity;
 
+		private OnEditorActionListener searchKanjiInputActionListener = new OnEditorActionListener() {
+			@Override
+			public boolean onEditorAction(TextView v, int actionId,
+					KeyEvent event) {
+				boolean handled = false;
+				if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+					mainActivity.SearchButton_onClick(v);
+					InputMethodManager imm = (InputMethodManager) mainActivity
+							.getSystemService(Context.INPUT_METHOD_SERVICE);
+					imm.hideSoftInputFromWindow(v.getWindowToken(),
+							InputMethodManager.HIDE_NOT_ALWAYS);
+					handled = true;
+				}
+				return handled;
+			}
+		};
+
 		public PlaceholderFragment() {
 		}
 
@@ -226,22 +330,14 @@ public class MainActivity extends ActionBarActivity implements
 			EditText searchKanjiCtrl = (EditText) rootView
 					.findViewById(R.id.KanjiInput);
 			searchKanjiCtrl
-					.setOnEditorActionListener(new OnEditorActionListener() {
-						@Override
-						public boolean onEditorAction(TextView v, int actionId,
-								KeyEvent event) {
-							boolean handled = false;
-							if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-								mainActivity.SearchButton_onClick(v);
-								InputMethodManager imm = (InputMethodManager) mainActivity
-										.getSystemService(Context.INPUT_METHOD_SERVICE);
-								imm.hideSoftInputFromWindow(v.getWindowToken(),
-										InputMethodManager.HIDE_NOT_ALWAYS);
-								handled = true;
-							}
-							return handled;
-						}
-					});
+					.setOnEditorActionListener(searchKanjiInputActionListener);
+			TextView partOfDispCtrl = (TextView) rootView
+					.findViewById(R.id.PartOfDisp);
+			partOfDispCtrl.setMovementMethod(LinkMovementMethod.getInstance());
+			TextView partsDispCtrl = (TextView) rootView
+					.findViewById(R.id.PartsDisp);
+			partsDispCtrl.setMovementMethod(LinkMovementMethod.getInstance());
+
 			// notify MainActivity
 			mCallbacks.onFragmentViewCreated(rootView);
 
