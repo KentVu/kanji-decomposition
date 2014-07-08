@@ -1,13 +1,20 @@
 package com.kentvu.kanji_decomposition;
 
+import java.util.ArrayList;
+
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.os.Bundle;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBarActivity;
+import android.text.ClipboardManager;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -29,12 +36,28 @@ import android.widget.Toast;
 
 import com.kentvu.kanji_decomposition.KanjiPartsDbHelper.KanjiPartsDbContract.KanjiParts;
 
+/* The activity that creates an instance of this dialog fragment must
+ * implement this interface in order to receive event callbacks.
+ * Each method passes the DialogFragment in case the host needs to query it. */
+interface SettingsDialogListener {
+	public void onDialogPositiveClick(DialogFragment dialog);
+
+	public void onDialogNegativeClick(DialogFragment dialog);
+}
+
+// Container Activity must implement this interface
+interface PlaceHolderFragmentMessages {
+	public void onFragmentViewCreated(View view);
+}
+
 public class MainActivity extends ActionBarActivity implements
-		PlaceHolderFragmentMessages {
+		PlaceHolderFragmentMessages, SettingsDialogListener {
 
 	// private static final int MAX_LINE_LENGTH = 150;
 	KanjiPartsDbHelper mDbHelper;
 	SQLiteDatabase db;
+	// private boolean[] mCheckItemSettings;
+	private boolean mCopyOnClick = false;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +72,7 @@ public class MainActivity extends ActionBarActivity implements
 
 		mDbHelper = new KanjiPartsDbHelper(getBaseContext());
 		// notify the user of creating database may take time
-		// TODO: wrap these inside kinda parallelizing code?
+		// TODO: wrap these inside somewhat parallelizing code?
 		try {
 			SQLiteDatabase dbe = SQLiteDatabase
 					.openDatabase(
@@ -67,20 +90,13 @@ public class MainActivity extends ActionBarActivity implements
 					"Creating database may take time on first search, please be patient!",
 					Toast.LENGTH_LONG).show();
 		}
+		// mCheckItemSettings = new boolean[getResources().getStringArray(
+		// R.array.options).length];
 	}
 
 	@Override
 	protected void onDestroy() {
-		// TODO Auto-generated method stub
 		super.onDestroy();
-	}
-
-	/**
-	 * Handle PlaceholderFragment's messages
-	 */
-	@Override
-	public void onFragmentViewCreated(View view) {
-		// placeholder
 	}
 
 	class MyClickableSpan extends ClickableSpan {
@@ -88,24 +104,39 @@ public class MainActivity extends ActionBarActivity implements
 		String content = null;
 
 		public MyClickableSpan(String _content) {
-			// TODO Auto-generated constructor stub
 			super();
 			content = _content;
 		}
 
 		@Override
 		public void onClick(View widget) {
-			// TODO Copy to clipboard
-			// Toast.makeText(MainActivity.this, content, Toast.LENGTH_SHORT)
-			// .show();
+			if (mCopyOnClick) {
+				// Gets a handle to the clipboard service.
+				ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+				// Creates a new text clip to put on the clipboard
+				// ClipData clip = ClipData.newPlainText("Kanji", content);
+				// clipboard.setPrimaryClip(clip);
+				clipboard.setText(content);
+				Toast.makeText(getBaseContext(),
+						"'" + content + "'" + " copied", Toast.LENGTH_SHORT)
+						.show();
+			}
+
 			EditText kanjiInput = (EditText) findViewById(R.id.KanjiInput);
-			kanjiInput.setText(content);
+			try {
+				kanjiInput.setText(content);
+			} catch (NullPointerException e) {
+				// on some occasion (such as screen orientation change), the
+				// layout gets recreated so the View cannot be retrieved, catch
+				// it just in case
+				e.printStackTrace();
+			}
 		}
 
 		@Override
 		public void updateDrawState(TextPaint ds) {
-			// TODO Auto-generated method stub
-//			super.updateDrawState(ds);
+			// overide but don't call super -> ignore link-like formating
+			// super.updateDrawState(ds);
 			// ds.setColor(Color.BLACK);//set text color
 			// ds.setUnderlineText(false); // set to false to remove underline
 		}
@@ -123,6 +154,12 @@ public class MainActivity extends ActionBarActivity implements
 		KanjiComponentsDisplay(searchKanji);
 		includingKanjisDisplay(searchKanji);
 		db.close();
+		// close soft keyboard
+		// InputMethodManager imm = (InputMethodManager)
+		// getSystemService(Context.INPUT_METHOD_SERVICE);
+		((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE))
+				.hideSoftInputFromWindow(view.getWindowToken(),
+						InputMethodManager.HIDE_NOT_ALWAYS);
 	}
 
 	private void largeMojiDisplay(String kanji) {
@@ -167,14 +204,16 @@ public class MainActivity extends ActionBarActivity implements
 		String parts = null;
 
 		// *display to user
-		if (c.moveToFirst()) {
-			parts = c.getString(1);
-			SpannableString ss = makeClickableSpanString(partsDispCtrl, ' ', parts);
+		if ((c.moveToFirst()) && ((parts = c.getString(1)) != null)) {
+			SpannableString ss = makeClickableSpanString(partsDispCtrl, ' ',
+					parts);
 			partsDispCtrl.setText(ss);
+
 		} else {
 			// searching kanji is not exists in database
+			partsDispCtrl.setText("");
 			partsDispCtrl.setHint(getResources().getString(
-					R.string.character_not_found));
+					R.string.parts_not_found));
 		}
 
 		// if (parts != null) {
@@ -188,6 +227,8 @@ public class MainActivity extends ActionBarActivity implements
 		TextView partOfDispCtrl = (TextView) findViewById(R.id.PartOfDisp);
 		// clear hint text
 		partOfDispCtrl.setHint("");
+		// clear text
+		partOfDispCtrl.setText("");
 
 		// prepare data
 		int unival = kanji.charAt(0);
@@ -220,7 +261,7 @@ public class MainActivity extends ActionBarActivity implements
 						'　', sb.toString());
 				// since PartOfDisp has been set to LinkMovementMethod, this is
 				// okay!
-				partOfDispCtrl.append(ss);
+				partOfDispCtrl.append(ss); // 「append」だから、clearを忘れないようね
 				// partOfDispCtrl.append("　");
 				// partOfDispCtrl.setText(sb);
 			} else {
@@ -249,8 +290,8 @@ public class MainActivity extends ActionBarActivity implements
 	private SpannableString makeClickableSpanString(TextView displayView,
 			char separatorSpace, String displayString) {
 		// get maximum number of character that can be fit into a line
-		int totalCharstoFit = displayView.getPaint().breakText(displayString, 0,
-				displayString.length(), true, displayView.getWidth(), null);
+		int totalCharstoFit = displayView.getPaint().breakText(displayString,
+				0, displayString.length(), true, displayView.getWidth(), null);
 		// beware of totalCharstoFit, if a line started by a space then
 		// delete that space
 		int charCount = 0;
@@ -273,6 +314,14 @@ public class MainActivity extends ActionBarActivity implements
 		return ss;
 	}
 
+	/**
+	 * Handle PlaceholderFragment's messages
+	 */
+	@Override
+	public void onFragmentViewCreated(View view) {
+		// placeholder
+	}
+
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
@@ -287,9 +336,55 @@ public class MainActivity extends ActionBarActivity implements
 		// as you specify a parent activity in AndroidManifest.xml.
 		int id = item.getItemId();
 		if (id == R.id.action_settings) {
+			// "When you want to show your dialog, create an instance of your
+			// DialogFragment and call show(), passing the FragmentManager and a
+			// tag name for the dialog fragment."
+			SettingsDialog myDialog = new SettingsDialog();
+			myDialog.show(getSupportFragmentManager(), "settings");
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
+	}
+
+	/**
+	 * Handles SettingsDialog's callbacks
+	 */
+	@Override
+	public void onDialogPositiveClick(DialogFragment dialog) {
+		// get checked items
+		SettingsDialog settingsDialog = (SettingsDialog) dialog;
+		ArrayList<String> checkedItemNames = new ArrayList<String>();
+
+		for (int checkedItemId : settingsDialog.selectedItems) {
+			checkedItemNames
+					.add(getResources().getStringArray(R.array.options)[checkedItemId]);
+			// mCheckItemSettings[checkedItemId] = true;
+			// TODO The following equals() check seems to be CPU expensive, but
+			// there's no other way :(
+			if (getResources().getStringArray(R.array.options)[checkedItemId]
+					.equals(getResources().getString(R.string.copy_on_click))) {
+				mCopyOnClick = true;
+			}
+			else{
+				// place more elseif here!
+			}
+		}
+
+		if (BuildConfig.DEBUG) {
+			Toast.makeText(getBaseContext(),
+					"Checked items: " + checkedItemNames
+					// + "\n" + mCheckItemSettings
+					, Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	@Override
+	public void onDialogNegativeClick(DialogFragment dialog) {
+		// TODO Auto-generated method stub
+		if (BuildConfig.DEBUG) {
+			Toast.makeText(getBaseContext(), "'Cancel' clicked",
+					Toast.LENGTH_SHORT).show();
+		}
 	}
 
 	/**
@@ -358,5 +453,80 @@ public class MainActivity extends ActionBarActivity implements
 			}
 		}
 
+	}
+
+	public static class SettingsDialog extends DialogFragment {
+
+		// Use this instance of the interface to deliver action events
+		SettingsDialogListener mListener;
+
+		// Where we track the selected items
+		ArrayList<Integer> selectedItems = new ArrayList<Integer>();
+
+		@Override
+		public void onAttach(Activity activity) {
+			super.onAttach(activity);
+			// Verify that the host activity implements the callback interface
+			try {
+				// Instantiate the NoticeDialogListener so we can send events to
+				// the host
+				mListener = (SettingsDialogListener) activity;
+			} catch (ClassCastException e) {
+				// The activity doesn't implement the interface, throw exception
+				throw new ClassCastException(activity.toString()
+						+ " must implement SettingsDialogListener");
+			}
+		}
+
+		@Override
+		public Dialog onCreateDialog(Bundle savedInstanceState) {
+			// 1. Instantiate an AlertDialog.Builder with its constructor
+			AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+
+			// 2. Chain together various setter methods to set the dialog
+			// characteristics
+			builder.setTitle("Settings")
+					.setPositiveButton(R.string.ok,
+							new DialogInterface.OnClickListener() {
+
+								@Override
+								public void onClick(DialogInterface dialog,
+										int which) {
+									mListener
+											.onDialogPositiveClick(SettingsDialog.this);
+								}
+							})
+					.setNegativeButton(R.string.cancel,
+							new DialogInterface.OnClickListener() {
+
+								@Override
+								public void onClick(DialogInterface dialog,
+										int which) {
+									mListener
+											.onDialogNegativeClick(SettingsDialog.this);
+								}
+							})
+					.setMultiChoiceItems(R.array.options, null,
+							new DialogInterface.OnMultiChoiceClickListener() {
+
+								@Override
+								public void onClick(DialogInterface dialog,
+										int which, boolean isChecked) {
+									if (isChecked) {
+										// If the user checked the item, add it
+										// to the selected items
+										selectedItems.add(which);
+									} else if (selectedItems.contains(which)) {
+										// Else, if the item is already in the
+										// array, remove it
+										selectedItems.remove(Integer
+												.valueOf(which));
+									}
+								}
+							});
+
+			// 3. Get the AlertDialog from create()
+			return builder.create();
+		}
 	}
 }

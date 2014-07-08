@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
 
     <string name="app_name">Kanji decomposition</string>
     <string name="action_settings">Settings</string>
@@ -12,6 +12,14 @@
     <string name="part_of_label">Part of:</string>
     <string name="part_of_default_text">難、水、夫</string>
     <string name="default_input_text">分</string>
-    <string name="character_not_found">Character not found</string>
+    <string name="parts_not_found">Can\'t break this Kanji, sorry!</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="copy_on_click" >Copy on Kanji click</string>
+    
+    
+    <string-array name="options">
+        <item>@string/copy_on_click</item>
+    </string-array>
 
 </resources>
