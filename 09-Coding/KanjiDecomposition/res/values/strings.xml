@@ -16,10 +16,12 @@
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
     <string name="copy_on_click" >Copy on Kanji click</string>
+    <string name="browse_on_click" >Browse Kanji on click</string>
     
     
     <string-array name="options">
         <item>@string/copy_on_click</item>
+        <item>@string/browse_on_click</item>
     </string-array>
 
 </resources>

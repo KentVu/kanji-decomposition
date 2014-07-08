@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="copy_on_click"
+        android:summary="@string/copy_on_click"
+        android:title="Copy on click" />
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="browse_on_click"
+        android:summary="@string/browse_on_click"
+        android:title="Browse on click" />
+
+</PreferenceScreen>

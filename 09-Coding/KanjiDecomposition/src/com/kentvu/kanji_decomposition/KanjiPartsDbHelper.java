@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
@@ -28,9 +29,13 @@ public class KanjiPartsDbHelper extends SQLiteOpenHelper {
 			// public static abstract class KanjiParts {
 			public static final String TABLE_NAME = "kanjiparts";
 			public static final String COLUMN_NAME_UNICODE_VALUE = "unicode_value";
+			public static final int COLUMN_ID_UNICODE_VALUE = 0;
 			public static final String COLUMN_NAME_RADICALS = "radicals";
+			public static final int COLUMN_ID_RADICALS = 1;
 			public static final String COLUMN_NAME_PARTOF = "part_of";
+			public static final int COLUMN_ID_PARTOF = 2;
 			public static final String COLUMN_NAME_JIS212_CODE = "jis212_code";
+			public static final int COLUMN_ID_JIS212_CODE = 3;
 		}
 
 		private static final String TEXT_TYPE = " TEXT";
@@ -55,7 +60,7 @@ public class KanjiPartsDbHelper extends SQLiteOpenHelper {
 	// version.
 	public static final int DATABASE_VERSION = 3;
 	public static final String DATABASE_NAME = "KanjiParts.db";
-//	public boolean DatabaseCreated = false;
+	// public boolean DatabaseCreated = false;
 
 	private Context context;
 
@@ -68,7 +73,7 @@ public class KanjiPartsDbHelper extends SQLiteOpenHelper {
 	public void onCreate(SQLiteDatabase db) {
 		db.execSQL(KanjiPartsDbContract.SQL_CREATE_KANJIPARTS);
 		initDictTable(db);
-//		DatabaseCreated = true;
+		// DatabaseCreated = true;
 	}
 
 	private void initDictTable(SQLiteDatabase db) {
@@ -97,8 +102,8 @@ public class KanjiPartsDbHelper extends SQLiteOpenHelper {
 					// the new row
 					long newRowId;
 					newRowId = db.insert(KanjiParts.TABLE_NAME, null, values);
-					 Log.w(context.getString(R.string.app_name),
-					 "Inserted new row : " + newRowId);
+					Log.w(context.getString(R.string.app_name),
+							"Inserted new row : " + newRowId);
 				}
 				line = br.readLine();
 			}
@@ -150,7 +155,8 @@ public class KanjiPartsDbHelper extends SQLiteOpenHelper {
 							long newRowId = db.insert(KanjiParts.TABLE_NAME,
 									null, values);
 							Log.w(context.getString(R.string.app_name),
-									"Kanji is not available, inserted new row : " + newRowId);
+									"Kanji is not available, inserted new row : "
+											+ newRowId);
 						}
 						// clear values
 						includingKanji = "";
@@ -165,7 +171,8 @@ public class KanjiPartsDbHelper extends SQLiteOpenHelper {
 					// check if it's not started with a "#"
 					if (!line.startsWith("#")) {
 						// append the including Kanji list
-						includingKanji += line;	// remember to clear it when done appending!
+						includingKanji += line; // remember to clear it when
+												// done appending!
 					}
 				}
 				line = br.readLine();
@@ -185,7 +192,35 @@ public class KanjiPartsDbHelper extends SQLiteOpenHelper {
 		// to simply to discard the data and start over
 		db.execSQL(KanjiPartsDbContract.SQL_DELETE_KANJIPARTS);
 		onCreate(db);
-
 	}
 
+	public String queryKanji(SQLiteDatabase db, int kanjival, int which_info) {
+		// *Retrieve data from database
+		// Define a projection that specifies which columns from the database
+		// you will actually use after this query.
+		String[] projection = { KanjiParts.COLUMN_NAME_UNICODE_VALUE,
+				KanjiParts.COLUMN_NAME_RADICALS,
+				KanjiParts.COLUMN_NAME_PARTOF};
+		// long execution time when creating database (calling on create of
+		// mDbHelper) (use some kind of parallelizing to overcome/deal with
+		// this?)
+		Cursor c = db.query(KanjiParts.TABLE_NAME, // The table to query
+				projection, // The columns to return
+				// The columns for the WHERE clause
+				KanjiParts.COLUMN_NAME_UNICODE_VALUE + " = ?",
+				// The values for the WHERE clause
+				new String[] { Integer.toString(kanjival) },
+				// don't group the rows
+				null, null, // don't filter by row groups
+				null // The sort order
+				);
+		String rsltInfo = null;
+		if (c.moveToFirst()) {
+			rsltInfo = c.getString(which_info);
+		} else {
+		}
+
+		c.close();
+		return rsltInfo;
+	}
 }
