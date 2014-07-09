@@ -51,6 +51,7 @@ interface PlaceHolderFragmentMessages {
 public class MainActivity extends ActionBarActivity implements
 		PlaceHolderFragmentMessages {
 
+	private static final String LAST_SEARCH_KANJI = "last_search_kanji";
 	// private static final int MAX_LINE_LENGTH = 150;
 	KanjiPartsDbHelper mDbHelper;
 	SQLiteDatabase db;
@@ -60,6 +61,7 @@ public class MainActivity extends ActionBarActivity implements
 	// }
 	private boolean mCopyOnClick = false;
 	private boolean mBrowseOnClick = false;
+	private boolean mShowToasts = false;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -107,18 +109,36 @@ public class MainActivity extends ActionBarActivity implements
 				SettingsActivity.KEY_PREF_COPY_ON_CLICK, false);
 		mBrowseOnClick = sharedPref.getBoolean(
 				SettingsActivity.KEY_PREF_BROWSE_ON_CLICK, false);
+		mShowToasts = sharedPref.getBoolean(
+				SettingsActivity.KEY_PREF_SHOW_TOASTS, false);
+	}
+
+	@Override
+	protected void onPause() {
+		// TODO Auto-generated method stub
+		super.onPause();
+		SharedPreferences sharedPref = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		SharedPreferences.Editor editor = sharedPref.edit();
+		editor.putString(LAST_SEARCH_KANJI,
+				((EditText) findViewById(R.id.KanjiInput)).getText().toString());
+		editor.commit();
 	}
 
 	@Override
 	protected void onStart() {
 		super.onStart();
 		reloadPreferences();
+		SharedPreferences sharedPref = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		EditText kanjiSearchCtrl = (EditText) findViewById(R.id.KanjiInput);
+		kanjiSearchCtrl.setText(sharedPref.getString(LAST_SEARCH_KANJI, ""));
 	}
 
-//	@Override
-//	protected void onDestroy() {
-//		super.onDestroy();
-//	}
+	// @Override
+	// protected void onDestroy() {
+	// super.onDestroy();
+	// }
 
 	class MyClickableSpan extends ClickableSpan {
 
@@ -140,20 +160,26 @@ public class MainActivity extends ActionBarActivity implements
 				// ClipData clip = ClipData.newPlainText("Kanji", content);
 				// clipboard.setPrimaryClip(clip);
 				clipboard.setText(content);
-				Toast.makeText(getBaseContext(),
-						"'" + content + "'" + " copied", Toast.LENGTH_SHORT)
-						.show();
+				if (mShowToasts) {
+					Toast.makeText(getBaseContext(),
+							"'" + content + "'" + " copied", Toast.LENGTH_SHORT)
+							.show();
+				}
+			}
+			if (mBrowseOnClick) {
+				EditText kanjiInput = (EditText) findViewById(R.id.KanjiInput);
+				try {
+					kanjiInput.setText(content);
+				} catch (NullPointerException e) {
+					// on some occasion (such as screen orientation change), the
+					// layout gets recreated so the View cannot be retrieved,
+					// catch
+					// it just in case
+					e.printStackTrace();
+				}
+				SearchButton_onClick(widget);
 			}
 
-			EditText kanjiInput = (EditText) findViewById(R.id.KanjiInput);
-			try {
-				kanjiInput.setText(content);
-			} catch (NullPointerException e) {
-				// on some occasion (such as screen orientation change), the
-				// layout gets recreated so the View cannot be retrieved, catch
-				// it just in case
-				e.printStackTrace();
-			}
 		}
 
 		@Override
@@ -169,13 +195,26 @@ public class MainActivity extends ActionBarActivity implements
 		// get the edittext control containing the searching kanji
 		EditText searchKanjiCtrl = (EditText) findViewById(R.id.KanjiInput);
 		// get the searching kanji as string
-		String searchKanji = searchKanjiCtrl.getText().toString();
+		String searchKanjis = searchKanjiCtrl.getText().toString();
+		// put into the search queue ONLY after the user actually inputed into
+		// the EditText
+		if (view.getId() == R.id.SearchButton
+				|| view.getId() == R.id.KanjiInput) {
+			TextView searchQueue = (TextView) findViewById(R.id.SearchQueue);
+			// make the text clickable
+			// XXX Check if character is available in database
+			String spacedString = insertSpaceBetweenCharacters(searchKanjis,
+					' ');
+			SpannableString ss = makeClickableSpanString(searchQueue, ' ',
+					spacedString.toString());
+			searchQueue.setText(ss);
+		}
 
 		db = mDbHelper.getReadableDatabase();
-		largeMojiDisplay(searchKanji);
+		largeMojiDisplay(searchKanjis);
 		// mDbHelper.getReadableDatabase().beginTransaction();
-		KanjiComponentsDisplay(searchKanji);
-		includingKanjisDisplay(searchKanji);
+		KanjiComponentsDisplay(searchKanjis);
+		includingKanjisDisplay(searchKanjis);
 		db.close();
 		// close soft keyboard
 		// InputMethodManager imm = (InputMethodManager)
@@ -189,8 +228,8 @@ public class MainActivity extends ActionBarActivity implements
 		// display to the largeMojiDisp
 		TextView largeMojiDispCtrl = (TextView) findViewById(R.id.LargeMojiDisp);
 		// display only the first kanji in string
-		SpannableString ss = new SpannableString(kanji);
-		ss.setSpan(new MyClickableSpan(kanji), 0, kanji.length(),
+		SpannableString ss = new SpannableString(kanji.substring(0, 1));
+		ss.setSpan(new MyClickableSpan(ss.toString()), 0, 1,
 				Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 		largeMojiDispCtrl.setText(ss);
 
@@ -218,7 +257,6 @@ public class MainActivity extends ActionBarActivity implements
 			partsDispCtrl.setText("");
 			partsDispCtrl.setHint(getResources().getString(
 					R.string.parts_not_found));
-
 		}
 	}
 
@@ -235,14 +273,10 @@ public class MainActivity extends ActionBarActivity implements
 
 		if (includingKanjis != null) {
 			// build a string which adds a space after each character
-			StringBuilder sb = new StringBuilder();
-			for (char c : includingKanjis.toCharArray()) {
-				sb.append(c);
-				sb.append('　'); // "Japanese" space
-			}
-
-			SpannableString ss = makeClickableSpanString(partOfDispCtrl, '　',
-					sb.toString());
+			String spacedString = insertSpaceBetweenCharacters(includingKanjis,
+					' ');
+			SpannableString ss = makeClickableSpanString(partOfDispCtrl, ' ',
+					spacedString.toString());
 			// since PartOfDisp has been set to LinkMovementMethod, this is
 			// okay!
 			partOfDispCtrl.append(ss); // 「append」だから、clearを忘れないようね
@@ -252,6 +286,23 @@ public class MainActivity extends ActionBarActivity implements
 			// this kanji do not have any other kanji including it
 			partOfDispCtrl.setText("");
 		}
+	}
+
+	/**
+	 * Builds a string which adds a space after each character
+	 * @param s
+	 * @return
+	 */
+	private String insertSpaceBetweenCharacters(String s, char spaceType) {
+		StringBuilder sb = new StringBuilder();
+		for (char c : s.toCharArray()) {
+			if (c != spaceType) {
+				sb.append(c);
+				// sb.append('　'); // "Japanese" space
+				sb.append(' ');
+			}
+		}
+		return sb.toString();
 	}
 
 	/**
@@ -269,17 +320,22 @@ public class MainActivity extends ActionBarActivity implements
 	private SpannableString makeClickableSpanString(TextView displayView,
 			char separatorSpace, String displayString) {
 		// get maximum number of character that can be fit into a line
+		// XXX sometimes (in my case, it's when the displayView's height is set
+		// to match_parent) this may return 0, which result in a forever loop
+		// later, what better should be done here?
 		int totalCharstoFit = displayView.getPaint().breakText(displayString,
 				0, displayString.length(), true, displayView.getWidth(), null);
 		// beware of totalCharstoFit, if a line started by a space then
 		// delete that space
 		int charCount = 0;
 		StringBuilder sb = new StringBuilder(displayString);
-		while (charCount < sb.length()) {
-			if (sb.charAt(charCount) == separatorSpace) {
-				sb.deleteCharAt(charCount);
+		if (totalCharstoFit > 0) {
+			while (charCount < sb.length()) {
+				if (sb.charAt(charCount) == separatorSpace) {
+					sb.deleteCharAt(charCount);
+				}
+				charCount += totalCharstoFit;
 			}
-			charCount += totalCharstoFit;
 		}
 		// if this kanji has part_of information
 		// make every displayed kanji clickable:
@@ -377,7 +433,8 @@ public class MainActivity extends ActionBarActivity implements
 			public boolean onEditorAction(TextView v, int actionId,
 					KeyEvent event) {
 				boolean handled = false;
-				if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+				if (actionId == EditorInfo.IME_ACTION_SEARCH
+						|| event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
 					mainActivity.SearchButton_onClick(v);
 					InputMethodManager imm = (InputMethodManager) mainActivity
 							.getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -404,12 +461,18 @@ public class MainActivity extends ActionBarActivity implements
 					.findViewById(R.id.KanjiInput);
 			searchKanjiCtrl
 					.setOnEditorActionListener(searchKanjiInputActionListener);
+			TextView largeMojiCtrl = (TextView) rootView
+					.findViewById(R.id.LargeMojiDisp);
+			largeMojiCtrl.setMovementMethod(LinkMovementMethod.getInstance());
 			TextView partOfDispCtrl = (TextView) rootView
 					.findViewById(R.id.PartOfDisp);
 			partOfDispCtrl.setMovementMethod(LinkMovementMethod.getInstance());
 			TextView partsDispCtrl = (TextView) rootView
 					.findViewById(R.id.PartsDisp);
 			partsDispCtrl.setMovementMethod(LinkMovementMethod.getInstance());
+			TextView searchQueue = (TextView) rootView
+					.findViewById(R.id.SearchQueue);
+			searchQueue.setMovementMethod(LinkMovementMethod.getInstance());
 
 			// notify MainActivity
 			mCallbacks.onFragmentViewCreated(rootView);

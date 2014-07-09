@@ -11,5 +11,9 @@
         android:key="browse_on_click"
         android:summary="@string/browse_on_click"
         android:title="Browse on click" />
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="show_toasts"
+        android:title="Show toasts" />
 
 </PreferenceScreen>

@@ -42,6 +42,7 @@ public class SettingsActivity extends PreferenceActivity {
 	private static final boolean ALWAYS_SIMPLE_PREFS = false;
 	static final String KEY_PREF_COPY_ON_CLICK = "copy_on_click";
 	static final String KEY_PREF_BROWSE_ON_CLICK = "browse_on_click";
+	static final String KEY_PREF_SHOW_TOASTS = "show_toasts";
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -132,8 +133,13 @@ public class SettingsActivity extends PreferenceActivity {
 	 * Helper method to determine if the device has an extra-large screen. For
 	 * example, 10" tablets are extra-large.
 	 */
+	@TargetApi(Build.VERSION_CODES.GINGERBREAD)
 	private static boolean isXLargeTablet(Context context) {
-		return (context.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_XLARGE;
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
+			return (context.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_XLARGE;
+		}else{
+			return false;
+		}
 	}
 
 	/**
@@ -236,58 +242,19 @@ public class SettingsActivity extends PreferenceActivity {
 	 * This fragment shows general preferences only. It is used when the
 	 * activity is showing a two-pane settings UI.
 	 */
-//	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
-//	public static class GeneralPreferenceFragment extends PreferenceFragment {
-//		@Override
-//		public void onCreate(Bundle savedInstanceState) {
-//			super.onCreate(savedInstanceState);
-//			addPreferencesFromResource(R.xml.pref_general);
-//
-//			// Bind the summaries of EditText/List/Dialog/Ringtone preferences
-//			// to their values. When their values change, their summaries are
-//			// updated to reflect the new value, per the Android Design
-//			// guidelines.
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	public static class GeneralPreferenceFragment extends PreferenceFragment {
+		@Override
+		public void onCreate(Bundle savedInstanceState) {
+			super.onCreate(savedInstanceState);
+			addPreferencesFromResource(R.xml.preferences);
+
+			// Bind the summaries of EditText/List/Dialog/Ringtone preferences
+			// to their values. When their values change, their summaries are
+			// updated to reflect the new value, per the Android Design
+			// guidelines.
 //			bindPreferenceSummaryToValue(findPreference("example_text"));
 //			bindPreferenceSummaryToValue(findPreference("example_list"));
-//		}
-//	}
-//
-//	/**
-//	 * This fragment shows notification preferences only. It is used when the
-//	 * activity is showing a two-pane settings UI.
-//	 */
-//	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
-//	public static class NotificationPreferenceFragment extends
-//			PreferenceFragment {
-//		@Override
-//		public void onCreate(Bundle savedInstanceState) {
-//			super.onCreate(savedInstanceState);
-//			addPreferencesFromResource(R.xml.pref_notification);
-//
-//			// Bind the summaries of EditText/List/Dialog/Ringtone preferences
-//			// to their values. When their values change, their summaries are
-//			// updated to reflect the new value, per the Android Design
-//			// guidelines.
-//			bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
-//		}
-//	}
-//
-//	/**
-//	 * This fragment shows data and sync preferences only. It is used when the
-//	 * activity is showing a two-pane settings UI.
-//	 */
-//	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
-//	public static class DataSyncPreferenceFragment extends PreferenceFragment {
-//		@Override
-//		public void onCreate(Bundle savedInstanceState) {
-//			super.onCreate(savedInstanceState);
-//			addPreferencesFromResource(R.xml.pref_data_sync);
-//
-//			// Bind the summaries of EditText/List/Dialog/Ringtone preferences
-//			// to their values. When their values change, their summaries are
-//			// updated to reflect the new value, per the Android Design
-//			// guidelines.
-//			bindPreferenceSummaryToValue(findPreference("sync_frequency"));
-//		}
-//	}
+		}
+	}
 }

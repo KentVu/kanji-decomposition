@@ -5,11 +5,5 @@
     <header
         android:fragment="com.kentvu.kanji_decomposition.SettingsActivity$GeneralPreferenceFragment"
         android:title="@string/pref_header_general" />
-    <header
-        android:fragment="com.kentvu.kanji_decomposition.SettingsActivity$NotificationPreferenceFragment"
-        android:title="@string/pref_header_notifications" />
-    <header
-        android:fragment="com.kentvu.kanji_decomposition.SettingsActivity$DataSyncPreferenceFragment"
-        android:title="@string/pref_header_data_sync" />
 
 </preference-headers>
