@@ -2,18 +2,21 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <SwitchPreference
-        android:defaultValue="false"
+        android:defaultValue="true"
         android:key="copy_on_click"
         android:summary="@string/copy_on_click"
         android:title="Copy on click" />
     <SwitchPreference
-        android:defaultValue="false"
+        android:defaultValue="true"
         android:key="browse_on_click"
         android:summary="@string/browse_on_click"
         android:title="Browse on click" />
     <SwitchPreference
-        android:defaultValue="false"
+        android:defaultValue="true"
         android:key="show_toasts"
         android:title="Show toasts" />
+
+    <com.kentvu.kanji_decomposition.ScrollAmountPreference>
+    </com.kentvu.kanji_decomposition.ScrollAmountPreference>
 
 </PreferenceScreen>

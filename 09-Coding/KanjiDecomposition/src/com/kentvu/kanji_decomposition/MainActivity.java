@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.os.Bundle;
@@ -51,7 +52,7 @@ interface PlaceHolderFragmentMessages {
 public class MainActivity extends ActionBarActivity implements
 		PlaceHolderFragmentMessages {
 
-	private static final String LAST_SEARCH_KANJI = "last_search_kanji";
+	private static final String LAST_SEARCH_KANJIS = "last_search_kanji";
 	// private static final int MAX_LINE_LENGTH = 150;
 	KanjiPartsDbHelper mDbHelper;
 	SQLiteDatabase db;
@@ -115,13 +116,13 @@ public class MainActivity extends ActionBarActivity implements
 
 	@Override
 	protected void onPause() {
-		// TODO Auto-generated method stub
 		super.onPause();
 		SharedPreferences sharedPref = PreferenceManager
 				.getDefaultSharedPreferences(this);
 		SharedPreferences.Editor editor = sharedPref.edit();
-		editor.putString(LAST_SEARCH_KANJI,
-				((EditText) findViewById(R.id.KanjiInput)).getText().toString());
+		editor.putString(LAST_SEARCH_KANJIS,
+				((TextView) findViewById(R.id.SearchQueue)).getText()
+						.toString());
 		editor.commit();
 	}
 
@@ -131,8 +132,10 @@ public class MainActivity extends ActionBarActivity implements
 		reloadPreferences();
 		SharedPreferences sharedPref = PreferenceManager
 				.getDefaultSharedPreferences(this);
-		EditText kanjiSearchCtrl = (EditText) findViewById(R.id.KanjiInput);
-		kanjiSearchCtrl.setText(sharedPref.getString(LAST_SEARCH_KANJI, ""));
+		TextView searchQueue = (TextView) findViewById(R.id.SearchQueue);
+		SpannableString ss = makeClickableSpanString(searchQueue, ' ',
+				sharedPref.getString(LAST_SEARCH_KANJIS, ""));
+		searchQueue.setText(ss);
 	}
 
 	// @Override
@@ -177,6 +180,9 @@ public class MainActivity extends ActionBarActivity implements
 					// it just in case
 					e.printStackTrace();
 				}
+				SearchButton_onClick(widget);
+			} else if ((widget.getId() == R.id.SearchQueue)) {
+				// always browse on SearchQueue clicked
 				SearchButton_onClick(widget);
 			}
 
@@ -290,6 +296,7 @@ public class MainActivity extends ActionBarActivity implements
 
 	/**
 	 * Builds a string which adds a space after each character
+	 * 
 	 * @param s
 	 * @return
 	 */
@@ -347,6 +354,19 @@ public class MainActivity extends ActionBarActivity implements
 			}
 		}
 		return ss;
+	}
+
+	public void onScrollBtnClick(View view) {
+		TextView partOfCtrl = (TextView) findViewById(R.id.PartOfDisp);
+		SharedPreferences sharedPref = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		int xScrollAmount = sharedPref.getInt(SettingsActivity.KEY_PREF_SCROLL_AMOUNT, 50);
+		if (view.getId() == R.id.ScrollUpBtn) {
+			// check if partOf view is overloaded (scrolling is available)
+			partOfCtrl.scrollBy(xScrollAmount, 0);
+		} else if (view.getId() == R.id.ScrollDownBtn) {
+
+		}
 	}
 
 	/**

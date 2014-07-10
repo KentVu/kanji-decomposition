@@ -23,5 +23,7 @@
         <item>@string/copy_on_click</item>
         <item>@string/browse_on_click</item>
     </string-array>
+        <string name="button_scroll_down_symbol">&#8681;</string>
+        <string name="button_scroll_up_symbol">&#8679;</string>
 
 </resources>

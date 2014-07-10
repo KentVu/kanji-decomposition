@@ -1,5 +1,7 @@
 package com.kentvu.kanji_decomposition;
 
+import java.util.List;
+
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -11,15 +13,12 @@ import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
-import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.preference.RingtonePreference;
+import android.support.v4.app.NavUtils;
 import android.text.TextUtils;
 import android.view.MenuItem;
-import android.support.v4.app.NavUtils;
-
-import java.util.List;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On
@@ -40,9 +39,10 @@ public class SettingsActivity extends PreferenceActivity {
 	 * shown on tablets.
 	 */
 	private static final boolean ALWAYS_SIMPLE_PREFS = false;
-	static final String KEY_PREF_COPY_ON_CLICK = "copy_on_click";
-	static final String KEY_PREF_BROWSE_ON_CLICK = "browse_on_click";
-	static final String KEY_PREF_SHOW_TOASTS = "show_toasts";
+	public static final String KEY_PREF_COPY_ON_CLICK = "copy_on_click";
+	public static final String KEY_PREF_BROWSE_ON_CLICK = "browse_on_click";
+	public static final String KEY_PREF_SHOW_TOASTS = "show_toasts";
+	public static final String KEY_PREF_SCROLL_AMOUNT = "scroll_amount";
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -101,24 +101,25 @@ public class SettingsActivity extends PreferenceActivity {
 
 		// Add 'general' preferences.
 		addPreferencesFromResource(R.xml.preferences);
+		
 
 		// Add 'notifications' preferences, and a corresponding header.
-//		PreferenceCategory fakeHeader = new PreferenceCategory(this);
-//		fakeHeader.setTitle(R.string.pref_header_notifications);
-//		getPreferenceScreen().addPreference(fakeHeader);
-//		addPreferencesFromResource(R.xml.pref_notification);
+		// PreferenceCategory fakeHeader = new PreferenceCategory(this);
+		// fakeHeader.setTitle(R.string.pref_header_notifications);
+		// getPreferenceScreen().addPreference(fakeHeader);
+		// addPreferencesFromResource(R.xml.pref_notification);
 
 		// Add 'data and sync' preferences, and a corresponding header.
-//		fakeHeader = new PreferenceCategory(this);
-//		fakeHeader.setTitle(R.string.pref_header_data_sync);
-//		getPreferenceScreen().addPreference(fakeHeader);
-//		addPreferencesFromResource(R.xml.pref_data_sync);
+		// fakeHeader = new PreferenceCategory(this);
+		// fakeHeader.setTitle(R.string.pref_header_data_sync);
+		// getPreferenceScreen().addPreference(fakeHeader);
+		// addPreferencesFromResource(R.xml.pref_data_sync);
 
 		// Bind the summaries of EditText/List/Dialog/Ringtone preferences to
 		// their values. When their values change, their summaries are updated
 		// to reflect the new value, per the Android Design guidelines.
-//		 bindPreferenceSummaryToValue(findPreference("copy_on_click"));
-//		 bindPreferenceSummaryToValue(findPreference("browse_on_click"));
+		// bindPreferenceSummaryToValue(findPreference("copy_on_click"));
+		// bindPreferenceSummaryToValue(findPreference("browse_on_click"));
 		// bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
 		// bindPreferenceSummaryToValue(findPreference("sync_frequency"));
 	}
@@ -137,7 +138,7 @@ public class SettingsActivity extends PreferenceActivity {
 	private static boolean isXLargeTablet(Context context) {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
 			return (context.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_XLARGE;
-		}else{
+		} else {
 			return false;
 		}
 	}
@@ -253,8 +254,8 @@ public class SettingsActivity extends PreferenceActivity {
 			// to their values. When their values change, their summaries are
 			// updated to reflect the new value, per the Android Design
 			// guidelines.
-//			bindPreferenceSummaryToValue(findPreference("example_text"));
-//			bindPreferenceSummaryToValue(findPreference("example_list"));
+			// bindPreferenceSummaryToValue(findPreference("example_text"));
+			// bindPreferenceSummaryToValue(findPreference("example_list"));
 		}
 	}
 }
