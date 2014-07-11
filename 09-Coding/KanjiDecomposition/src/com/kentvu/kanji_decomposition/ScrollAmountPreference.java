@@ -6,13 +6,17 @@ import android.content.res.TypedArray;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.preference.DialogPreference;
+import android.preference.PreferenceActivity;
 import android.util.AttributeSet;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.SeekBar;
 
 public class ScrollAmountPreference extends DialogPreference {
 	private int mNewValue;
 	private SeekBar mSeekBar;
+	private ViewGroup mParentView;
+	private int mCurrentValue;
 
 	public ScrollAmountPreference(Context context, AttributeSet attrs) {
 		super(context, attrs);
@@ -25,13 +29,21 @@ public class ScrollAmountPreference extends DialogPreference {
 	}
 
 	@Override
+	protected void onBindDialogView(View view) {
+		// TODO Auto-generated method stub
+		super.onBindDialogView(view);
+		mSeekBar = (SeekBar) view;
+		mSeekBar.setProgress(mCurrentValue);
+	}
+
+	@Override
 	protected void onDialogClosed(boolean positiveResult) {
 		// super.onDialogClosed(positiveResult);
 		// When the user selects "OK", persist the new value
 		if (positiveResult) {
 			if (mSeekBar == null) {
-				mSeekBar = (SeekBar) getView(null, null).findViewById(
-						R.id.ScrollAmountCtrl);
+				PreferenceActivity activity = (PreferenceActivity) getContext();
+				mSeekBar = (SeekBar) activity.findViewById(R.id.ScrollAmountCtrl);
 			}
 			if (mSeekBar != null) {
 				mNewValue = mSeekBar.getProgress();
@@ -43,7 +55,6 @@ public class ScrollAmountPreference extends DialogPreference {
 	@Override
 	protected void onSetInitialValue(boolean restorePersistedValue,
 			Object defaultValue) {
-		int mCurrentValue;
 		// super.onSetInitialValue(restorePersistedValue, defaultValue);
 		if (restorePersistedValue) {
 			// Restore existing state
@@ -55,7 +66,7 @@ public class ScrollAmountPreference extends DialogPreference {
 			mCurrentValue = (Integer) defaultValue;
 			persistInt(mCurrentValue);
 		}
-		mSeekBar.setProgress(mCurrentValue);
+//		mSeekBar.setProgress(mCurrentValue);
 	}
 
 	@Override

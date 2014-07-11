@@ -2,6 +2,8 @@ package com.kentvu.kanji_decomposition;
 
 import java.util.List;
 
+import com.kentvu.kanji_decomposition.R.integer;
+
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -101,7 +103,6 @@ public class SettingsActivity extends PreferenceActivity {
 
 		// Add 'general' preferences.
 		addPreferencesFromResource(R.xml.preferences);
-		
 
 		// Add 'notifications' preferences, and a corresponding header.
 		// PreferenceCategory fakeHeader = new PreferenceCategory(this);
@@ -118,7 +119,7 @@ public class SettingsActivity extends PreferenceActivity {
 		// Bind the summaries of EditText/List/Dialog/Ringtone preferences to
 		// their values. When their values change, their summaries are updated
 		// to reflect the new value, per the Android Design guidelines.
-		// bindPreferenceSummaryToValue(findPreference("copy_on_click"));
+		bindPreferenceSummaryToValue(findPreference("scroll_amount"), int.class);
 		// bindPreferenceSummaryToValue(findPreference("browse_on_click"));
 		// bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
 		// bindPreferenceSummaryToValue(findPreference("sync_frequency"));
@@ -172,7 +173,8 @@ public class SettingsActivity extends PreferenceActivity {
 	private static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
 		@Override
 		public boolean onPreferenceChange(Preference preference, Object value) {
-			String stringValue = value.toString();
+			String stringValue;
+			stringValue = value.toString();
 
 			if (preference instanceof ListPreference) {
 				// For list preferences, look up the correct display value in
@@ -184,28 +186,6 @@ public class SettingsActivity extends PreferenceActivity {
 				preference
 						.setSummary(index >= 0 ? listPreference.getEntries()[index]
 								: null);
-
-			} else if (preference instanceof RingtonePreference) {
-				// For ringtone preferences, look up the correct display value
-				// using RingtoneManager.
-				if (TextUtils.isEmpty(stringValue)) {
-					// Empty values correspond to 'silent' (no ringtone).
-					preference.setSummary(R.string.pref_ringtone_silent);
-				} else {
-					Ringtone ringtone = RingtoneManager.getRingtone(
-							preference.getContext(), Uri.parse(stringValue));
-
-					if (ringtone == null) {
-						// Clear the summary if there was a lookup error.
-						preference.setSummary(null);
-					} else {
-						// Set the summary to reflect the new ringtone display
-						// name.
-						String name = ringtone
-								.getTitle(preference.getContext());
-						preference.setSummary(name);
-					}
-				}
 
 			} else {
 				// For all other preferences, set the summary to the value's
@@ -225,18 +205,25 @@ public class SettingsActivity extends PreferenceActivity {
 	 * 
 	 * @see #sBindPreferenceSummaryToValueListener
 	 */
-	private static void bindPreferenceSummaryToValue(Preference preference) {
+	private static void bindPreferenceSummaryToValue(Preference preference,
+			Class<?> t) {
 		// Set the listener to watch for value changes.
 		preference
 				.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
 
 		// Trigger the listener immediately with the preference's
 		// current value.
-		sBindPreferenceSummaryToValueListener.onPreferenceChange(
-				preference,
-				PreferenceManager.getDefaultSharedPreferences(
-						preference.getContext()).getString(preference.getKey(),
-						""));
+		String prefValue;
+		if (t == int.class) {
+			int intPref = PreferenceManager.getDefaultSharedPreferences(
+					preference.getContext()).getInt(preference.getKey(), 0);
+			prefValue = Integer.toString(intPref);
+		} else {
+			prefValue = PreferenceManager.getDefaultSharedPreferences(
+					preference.getContext()).getString(preference.getKey(), "");
+		}
+		sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
+				prefValue);
 	}
 
 	/**

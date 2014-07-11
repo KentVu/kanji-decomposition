@@ -16,7 +16,9 @@
         android:key="show_toasts"
         android:title="Show toasts" />
 
-    <com.kentvu.kanji_decomposition.ScrollAmountPreference>
+    <com.kentvu.kanji_decomposition.ScrollAmountPreference 
+        android:key="scroll_amount"
+        android:title="Scroll amount">
     </com.kentvu.kanji_decomposition.ScrollAmountPreference>
 
 </PreferenceScreen>
