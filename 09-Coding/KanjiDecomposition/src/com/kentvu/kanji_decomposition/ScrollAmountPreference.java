@@ -1,12 +1,10 @@
 package com.kentvu.kanji_decomposition;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.preference.DialogPreference;
-import android.preference.PreferenceActivity;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,9 +28,11 @@ public class ScrollAmountPreference extends DialogPreference {
 
 	@Override
 	protected void onBindDialogView(View view) {
-		// TODO Auto-generated method stub
 		super.onBindDialogView(view);
 		mSeekBar = (SeekBar) view;
+		// mCurrentValue =
+		// getPersistedInt(getContext().getResources().getInteger(
+		// R.integer.default_scroll_amount));
 		mSeekBar.setProgress(mCurrentValue);
 	}
 
@@ -41,15 +41,20 @@ public class ScrollAmountPreference extends DialogPreference {
 		// super.onDialogClosed(positiveResult);
 		// When the user selects "OK", persist the new value
 		if (positiveResult) {
-			if (mSeekBar == null) {
-				PreferenceActivity activity = (PreferenceActivity) getContext();
-				mSeekBar = (SeekBar) activity.findViewById(R.id.ScrollAmountCtrl);
-			}
+			// if (mSeekBar == null) {
+			// SettingsActivity activity = (SettingsActivity) getContext();
+			// activity.onSharedPreferenceChanged(
+			// PreferenceManager.getDefaultSharedPreferences(getContext()),
+			// SettingsActivity.KEY_PREF_SCROLL_AMOUNT);
+			// mSeekBar = (SeekBar) activity
+			// .findViewById(R.id.ScrollAmountCtrl);
+			// }
 			if (mSeekBar != null) {
 				mNewValue = mSeekBar.getProgress();
 				persistInt(mNewValue);
 			}
 		}
+		mCurrentValue = mNewValue;
 	}
 
 	@Override
@@ -58,15 +63,14 @@ public class ScrollAmountPreference extends DialogPreference {
 		// super.onSetInitialValue(restorePersistedValue, defaultValue);
 		if (restorePersistedValue) {
 			// Restore existing state
-			mCurrentValue = this.getPersistedInt(getContext()
-					.getResources().getInteger(
-							R.integer.default_scroll_amount));
+			mCurrentValue = this.getPersistedInt(getContext().getResources()
+					.getInteger(R.integer.default_scroll_amount));
 		} else {
 			// Set default state from the XML attribute
 			mCurrentValue = (Integer) defaultValue;
 			persistInt(mCurrentValue);
 		}
-//		mSeekBar.setProgress(mCurrentValue);
+		// mSeekBar.setProgress(mCurrentValue);
 	}
 
 	@Override
@@ -88,30 +92,33 @@ public class ScrollAmountPreference extends DialogPreference {
 			// use superclass state
 			return superState;
 		}
-		
-	    // Create instance of custom BaseSavedState
-	    final ScrollAmountPreference.SavedState myState = new SavedState(superState);
-	    // Set the state's value with the class member that holds current
-	    // setting value
-	    myState.value = mNewValue;
-	    return myState;
+
+		// Create instance of custom BaseSavedState
+		final ScrollAmountPreference.SavedState myState = new SavedState(
+				superState);
+		// Set the state's value with the class member that holds current
+		// setting value
+		myState.value = mNewValue;
+		return myState;
 	}
-	
+
 	@Override
 	protected void onRestoreInstanceState(Parcelable state) {
-	    // Check whether we saved the state in onSaveInstanceState
-	    if (state == null || !state.getClass().equals(ScrollAmountPreference.SavedState.class)) {
-	        // Didn't save the state, so call superclass
-	        super.onRestoreInstanceState(state);
-	        return;
-	    }
+		// Check whether we saved the state in onSaveInstanceState
+		if (state == null
+				|| !state.getClass().equals(
+						ScrollAmountPreference.SavedState.class)) {
+			// Didn't save the state, so call superclass
+			super.onRestoreInstanceState(state);
+			return;
+		}
 
-	    // Cast state to custom BaseSavedState and pass to superclass
-	    ScrollAmountPreference.SavedState myState = (ScrollAmountPreference.SavedState) state;
-	    super.onRestoreInstanceState(myState.getSuperState());
-	    
-	    // Set this Preference's widget to reflect the restored state
-	    mSeekBar.setProgress(myState.value);
+		// Cast state to custom BaseSavedState and pass to superclass
+		ScrollAmountPreference.SavedState myState = (ScrollAmountPreference.SavedState) state;
+		super.onRestoreInstanceState(myState.getSuperState());
+
+		// Set this Preference's widget to reflect the restored state
+		mSeekBar.setProgress(myState.value);
 	}
 
 	private static class SavedState extends BaseSavedState {

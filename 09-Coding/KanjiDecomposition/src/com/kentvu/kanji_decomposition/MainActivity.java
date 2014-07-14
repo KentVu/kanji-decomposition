@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.Resources;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.os.Bundle;
@@ -46,13 +45,13 @@ interface SettingsDialogListener {
 
 // Container Activity must implement this interface
 interface PlaceHolderFragmentMessages {
-	public void onFragmentViewCreated(View view);
+	public void onSearchKanjiSubmitted(View view);
 }
 
 public class MainActivity extends ActionBarActivity implements
 		PlaceHolderFragmentMessages {
 
-	private static final String LAST_SEARCH_KANJIS = "last_search_kanji";
+	private static final String KEY_LAST_SEARCH_KANJIS = "last_search_kanji";
 	// private static final int MAX_LINE_LENGTH = 150;
 	KanjiPartsDbHelper mDbHelper;
 	SQLiteDatabase db;
@@ -120,7 +119,7 @@ public class MainActivity extends ActionBarActivity implements
 		SharedPreferences sharedPref = PreferenceManager
 				.getDefaultSharedPreferences(this);
 		SharedPreferences.Editor editor = sharedPref.edit();
-		editor.putString(LAST_SEARCH_KANJIS,
+		editor.putString(KEY_LAST_SEARCH_KANJIS,
 				((TextView) findViewById(R.id.SearchQueue)).getText()
 						.toString());
 		editor.commit();
@@ -134,7 +133,7 @@ public class MainActivity extends ActionBarActivity implements
 				.getDefaultSharedPreferences(this);
 		TextView searchQueue = (TextView) findViewById(R.id.SearchQueue);
 		SpannableString ss = makeClickableSpanString(searchQueue, ' ',
-				sharedPref.getString(LAST_SEARCH_KANJIS, ""));
+				sharedPref.getString(KEY_LAST_SEARCH_KANJIS, ""));
 		searchQueue.setText(ss);
 	}
 
@@ -273,6 +272,7 @@ public class MainActivity extends ActionBarActivity implements
 		partOfDispCtrl.setHint("");
 		// clear text
 		partOfDispCtrl.setText("");
+		partOfDispCtrl.scrollTo(0, 0);
 
 		String includingKanjis = mDbHelper.queryKanji(db, kanji.charAt(0),
 				KanjiParts.COLUMN_ID_PARTOF);
@@ -360,12 +360,13 @@ public class MainActivity extends ActionBarActivity implements
 		TextView partOfCtrl = (TextView) findViewById(R.id.PartOfDisp);
 		SharedPreferences sharedPref = PreferenceManager
 				.getDefaultSharedPreferences(this);
-		int xScrollAmount = sharedPref.getInt(SettingsActivity.KEY_PREF_SCROLL_AMOUNT, 50);
+		int yScrollAmount = sharedPref.getInt(
+				SettingsActivity.KEY_PREF_SCROLL_AMOUNT, 50);
 		if (view.getId() == R.id.ScrollUpBtn) {
-			// check if partOf view is overloaded (scrolling is available)
-			partOfCtrl.scrollBy(xScrollAmount, 0);
+			// XXX check if partOf view is overloaded (scrolling is available)
+			partOfCtrl.scrollBy(0, -yScrollAmount);
 		} else if (view.getId() == R.id.ScrollDownBtn) {
-
+			partOfCtrl.scrollBy(0, yScrollAmount);
 		}
 	}
 
@@ -373,8 +374,8 @@ public class MainActivity extends ActionBarActivity implements
 	 * Handle PlaceholderFragment's messages
 	 */
 	@Override
-	public void onFragmentViewCreated(View view) {
-		// placeholder
+	public void onSearchKanjiSubmitted(View view) {
+		SearchButton_onClick(view);
 	}
 
 	@Override
@@ -455,7 +456,10 @@ public class MainActivity extends ActionBarActivity implements
 				boolean handled = false;
 				if (actionId == EditorInfo.IME_ACTION_SEARCH
 						|| event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
-					mainActivity.SearchButton_onClick(v);
+					// notify mainActivity
+					// mainActivity.SearchButton_onClick(v);
+					mCallbacks.onSearchKanjiSubmitted(v);
+					// hide softIme
 					InputMethodManager imm = (InputMethodManager) mainActivity
 							.getSystemService(Context.INPUT_METHOD_SERVICE);
 					imm.hideSoftInputFromWindow(v.getWindowToken(),
@@ -495,7 +499,7 @@ public class MainActivity extends ActionBarActivity implements
 			searchQueue.setMovementMethod(LinkMovementMethod.getInstance());
 
 			// notify MainActivity
-			mCallbacks.onFragmentViewCreated(rootView);
+//			mCallbacks.onFragmentViewCreated(rootView);
 
 			return rootView;
 		}

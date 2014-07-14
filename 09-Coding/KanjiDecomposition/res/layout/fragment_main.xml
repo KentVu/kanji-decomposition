@@ -45,6 +45,7 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/SmallInfoPart"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal" >
@@ -132,27 +133,27 @@
             android:hint="@string/part_of_default_text"
             android:scrollbars="vertical"
             android:textSize="25sp" />
-
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" >
-
-            <Button
-                android:id="@+id/ScrollDownBtn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
-                android:onClick="onScrollBtnClick"
-                android:text="@string/button_scroll_down_symbol" />
-
-            <Button
-                android:id="@+id/ScrollUpBtn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_toLeftOf="@id/ScrollDownBtn"
-                android:onClick="onScrollBtnClick"
-                android:text="@string/button_scroll_up_symbol" />
-        </RelativeLayout>
     </LinearLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <Button
+            android:id="@+id/ScrollDownBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:onClick="onScrollBtnClick"
+            android:text="@string/button_scroll_down_symbol" />
+
+        <Button
+            android:id="@+id/ScrollUpBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@id/ScrollDownBtn"
+            android:onClick="onScrollBtnClick"
+            android:text="@string/button_scroll_up_symbol" />
+    </RelativeLayout>
 
 </LinearLayout>

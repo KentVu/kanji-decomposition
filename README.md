@@ -1,4 +1,4 @@
-kanji-decomposition
+﻿kanji-decomposition
 ===================
 
 Decompose one kanji (hanji, Hán tự, Hanza etc...) into components (parts), database based on RADKFILE project
@@ -14,3 +14,9 @@ So I decided to make the one that I need on my own, with the help of the [RADKFI
 (http://www.csse.monash.edu.au/~jwb/kradinf.html) project.
 
 GitHub repository page: https://github.com/KentVu/kanji-decomposition
+
+### Future plans/TODO
+* Using wikicommon database for more updated kanji information: 
+http://commons.wikimedia.org/wiki/Commons:Chinese_characters_decomposition
+* There's an awesome project writen in python, should us use their databases?
+https://code.google.com/p/cjklib/wiki/DatabaseScheme
