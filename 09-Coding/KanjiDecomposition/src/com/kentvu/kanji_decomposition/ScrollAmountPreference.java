@@ -7,13 +7,11 @@ import android.os.Parcelable;
 import android.preference.DialogPreference;
 import android.util.AttributeSet;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.SeekBar;
 
 public class ScrollAmountPreference extends DialogPreference {
 	private int mNewValue;
 	private SeekBar mSeekBar;
-	private ViewGroup mParentView;
 	private int mCurrentValue;
 
 	public ScrollAmountPreference(Context context, AttributeSet attrs) {

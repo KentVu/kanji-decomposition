@@ -30,6 +30,7 @@
             android:imeOptions="actionSearch"
             android:inputType="text"
             android:maxLines="1"
+            android:enabled="true"
             android:tag="kanjiinput"
             android:text="@string/default_input_text" />
         <!-- just to flagout the multiline attribute -->

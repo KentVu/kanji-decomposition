@@ -1,11 +1,20 @@
 package com.kentvu.kanji_decomposition;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+import java.util.concurrent.ExecutionException;
+
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.os.AsyncTask;
+import android.os.AsyncTask.Status;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.DialogFragment;
@@ -62,6 +71,7 @@ public class MainActivity extends ActionBarActivity implements
 	private boolean mCopyOnClick = false;
 	private boolean mBrowseOnClick = false;
 	private boolean mShowToasts = false;
+	private DatabaseOpenTask databaseOpenTask;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -76,7 +86,6 @@ public class MainActivity extends ActionBarActivity implements
 
 		mDbHelper = new KanjiPartsDbHelper(getBaseContext());
 		// notify the user of creating database may take time
-		// TODO: wrap these inside somewhat parallelizing code?
 		try {
 			SQLiteDatabase dbe = SQLiteDatabase
 					.openDatabase(
@@ -135,6 +144,7 @@ public class MainActivity extends ActionBarActivity implements
 		SpannableString ss = makeClickableSpanString(searchQueue, ' ',
 				sharedPref.getString(KEY_LAST_SEARCH_KANJIS, ""));
 		searchQueue.setText(ss);
+		databaseOpenTask = new DatabaseOpenTask();
 	}
 
 	// @Override
@@ -214,13 +224,19 @@ public class MainActivity extends ActionBarActivity implements
 					spacedString.toString());
 			searchQueue.setText(ss);
 		}
-
-		db = mDbHelper.getReadableDatabase();
 		largeMojiDisplay(searchKanjis);
+		// "Waits if necessary for the computation to complete, and then retrieves its result."
+//		SQLiteDatabase db;
+		// db = databaseOpenTask.get();
 		// mDbHelper.getReadableDatabase().beginTransaction();
-		KanjiComponentsDisplay(searchKanjis);
-		includingKanjisDisplay(searchKanjis);
-		db.close();
+		if (databaseOpenTask.getStatus() == Status.FINISHED) {
+			db = mDbHelper.getReadableDatabase();
+			KanjiComponentsDisplay(searchKanjis);
+			includingKanjisDisplay(searchKanjis);
+			db.close();
+		} else {
+			databaseOpenTask.execute(mDbHelper);
+		}
 		// close soft keyboard
 		// InputMethodManager imm = (InputMethodManager)
 		// getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -249,7 +265,7 @@ public class MainActivity extends ActionBarActivity implements
 		// get the display control
 		TextView partsDispCtrl = (TextView) findViewById(R.id.PartsDisp);
 
-		String parts = mDbHelper.queryKanji(db, kanji.charAt(0),
+		String parts = KanjiPartsDbHelper.queryKanji(db, kanji.charAt(0),
 				KanjiParts.COLUMN_ID_RADICALS);
 
 		// *display to user
@@ -443,6 +459,195 @@ public class MainActivity extends ActionBarActivity implements
 	// }
 
 	/**
+	 * Handles long time execution tasks in separate thread
+	 */
+	private class DatabaseOpenTask extends
+			AsyncTask<KanjiPartsDbHelper, Integer, SQLiteDatabase> {
+		SQLiteDatabase mDb;
+
+		@Override
+		protected SQLiteDatabase doInBackground(KanjiPartsDbHelper... params) {
+			// TODO Auto-generated method stub
+			mDb = params[0].getWritableDatabase();
+			publishProgress(1, 100, 100);
+			if (params[0].NeedUpdate)
+				initDictTable(mDb);
+			params[0].NeedUpdate = false;
+			return mDb;
+		}
+
+		/**
+		 * @param values
+		 *            : 1: step, 2: rowInserted, 3: rowUpdated
+		 */
+		@Override
+		protected void onProgressUpdate(Integer... values) {
+			// TODO Auto-generated method stub
+			// super.onProgressUpdate(values);
+			TextView partsCtrl = (TextView) findViewById(R.id.PartsDisp);
+			TextView partOfCtrl = (TextView) findViewById(R.id.PartOfDisp);
+			try {
+				partsCtrl.setHint("RowInserted: " + values[1]
+						+ "\nRowUpdated: " + values[2]);
+				switch (values[0]) {
+				case 0:
+					partOfCtrl.setHint("Reading in kradfile...");
+					break;
+				case 1:
+					partOfCtrl.setHint("Reading in radkfile...");
+					break;
+				default:
+					partOfCtrl.setHint("Read completed!");
+					break;
+				}
+			} catch (NullPointerException e) {
+				// TODO: handle exception
+//				e.printStackTrace();
+				Log.w("DbCreateTask", "My activity has been navigated away?");
+			}
+		}
+
+		/**
+		 * See activity chart (astah file) for algorithm
+		 * 
+		 * @param db
+		 */
+		private void initDictTable(SQLiteDatabase db) {
+			Integer step = 0;
+			Integer rowInserted = 0;
+			Integer rowUpdated = 0;
+
+			// Read in each line of kradfile
+			// open kradfile?
+			BufferedReader br = new BufferedReader(new InputStreamReader(
+					getResources().openRawResource(R.raw.kradfile),
+					Charset.forName("EUC-JP")));
+
+			// for each line
+			try {
+				String line = br.readLine();
+				while (line != null) {
+					// check if it's comment or not
+					if (!line.trim().startsWith("#")) {
+						// if not a comment line then parse it into the table
+						char kanji = line.trim().charAt(0);
+						String parts = line.substring(line.indexOf(':') + 2);
+						// Get kanji unicode value
+						int unival = kanji;
+						// insert to the table
+						ContentValues values = new ContentValues();
+						values.put(KanjiParts.COLUMN_NAME_UNICODE_VALUE, unival);
+						values.put(KanjiParts.COLUMN_NAME_RADICALS, parts);
+						// Insert the new row, returning the primary key value
+						// of the new row
+						long newRowId;
+						newRowId = db.insert(KanjiParts.TABLE_NAME, null,
+								values);
+						Log.w(getString(R.string.app_name),
+								"Inserted new row : " + newRowId);
+						rowInserted++;
+						if ((rowInserted % 10) == 0) {
+							// Try to keep this parameter order
+							publishProgress(step, rowInserted, rowUpdated);
+						}
+					}
+					line = br.readLine();
+				}
+				br.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			try {
+				step = 1;
+				br = new BufferedReader(new InputStreamReader(getResources()
+						.openRawResource(R.raw.radkfile),
+						Charset.forName("EUC-JP")));
+				String line = br.readLine().trim();
+				char currentKanji = '\u0000';
+				@SuppressWarnings("unused")
+				int kanjiStroke;
+				String includingKanji = "";
+				String jis212code = "";
+				// for each line
+				while (line != null) {
+					// check if it's started with a "$"
+					if (line.startsWith("$")) {
+						// last time stored includingKanji information
+						// available?
+						if (!"".equals(includingKanji)
+								&& currentKanji != '\u0000') {
+							// update database's table
+							ContentValues values = new ContentValues();
+							int unival = currentKanji;
+							// values.put(KanjiParts.COLUMN_NAME_UNICODE_VALUE,
+							// unival);
+							values.put(KanjiParts.COLUMN_NAME_PARTOF,
+									includingKanji);
+							values.put(KanjiParts.COLUMN_NAME_JIS212_CODE,
+									jis212code);
+							// Which row to update, based on the ID
+							String selection = KanjiParts.COLUMN_NAME_UNICODE_VALUE
+									+ " = ?";
+							String[] selectionArgs = { String.valueOf(unival) };
+							// update
+							int count = db.update(KanjiParts.TABLE_NAME,
+									values, selection, selectionArgs);
+							Log.i(getString(R.string.app_name),
+									"Updated part_of info : unival " + unival
+											+ ", " + count + " row affected");
+							if (count == 0) {
+								// if kanji is not available, insert
+								values.put(
+										KanjiParts.COLUMN_NAME_UNICODE_VALUE,
+										unival);
+								long newRowId = db.insert(
+										KanjiParts.TABLE_NAME, null, values);
+								Log.w(getString(R.string.app_name),
+										"Kanji is not available, inserted new row : "
+												+ newRowId);
+								rowInserted++;
+								publishProgress(step, rowInserted, rowUpdated);
+							} else {
+								// rowUpdated++;
+								rowUpdated += count;
+								// if ((rowUpdated % 50) == 0) {
+								publishProgress(step, rowInserted, rowUpdated);
+								// }
+							}
+							// clear values
+							includingKanji = "";
+						}
+						String tokens[] = line.split(" ");
+						currentKanji = tokens[1].charAt(0);
+						kanjiStroke = Integer.parseInt(tokens[2]);
+						if (tokens.length >= 4) {
+							jis212code = tokens[3];
+						}
+					} else {
+						// check if it's not started with a "#"
+						if (!line.startsWith("#")) {
+							// append the including Kanji list
+							includingKanji += line; // remember to clear it when
+													// done appending!
+						}
+					}
+					line = br.readLine();
+				}
+				br.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			// Toast.makeText(context, "Database Created",
+			// Toast.LENGTH_LONG).show();
+			step++;
+			publishProgress(step, rowInserted, rowUpdated);
+		}
+	}
+
+	/**
 	 * A placeholder fragment containing a simple view.
 	 */
 	public static class PlaceholderFragment extends Fragment {
@@ -499,7 +704,7 @@ public class MainActivity extends ActionBarActivity implements
 			searchQueue.setMovementMethod(LinkMovementMethod.getInstance());
 
 			// notify MainActivity
-//			mCallbacks.onFragmentViewCreated(rootView);
+			// mCallbacks.onFragmentViewCreated(rootView);
 
 			return rootView;
 		}
